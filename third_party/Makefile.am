@@ -33,17 +33,20 @@ EXTRA_DIST                              = \
     nlbuild-autotools                     \
     openthread-test-driver                \
     NordicSemiconductor                   \
+    microcoap                             \
     $(NULL)
 
 # Always package (e.g. for 'make dist') these subdirectories.
 
 DIST_SUBDIRS                            = \
     mbedtls                               \
+    microcoap                             \
     $(NULL)
 
 if OPENTHREAD_ENABLE_BUILTIN_MBEDTLS
 SUBDIRS                                 = \
     mbedtls                               \
+    microcoap                             \
     $(NULL)
 endif # OPENTHREAD_ENABLE_BUILTIN_MBEDTLS
 

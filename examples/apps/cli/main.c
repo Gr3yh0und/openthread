@@ -40,6 +40,11 @@
 #include <openthread-core-config.h>
 #include <assert.h>
 
+// microcoap
+#include "../third_party/microcoap/coap.h"
+#include "openthread/udp.h"
+#include <string.h>
+
 #ifdef OPENTHREAD_MULTIPLE_INSTANCE
 void *otPlatCAlloc(size_t aNum, size_t aSize)
 {
@@ -55,6 +60,51 @@ void otPlatFree(void *aPtr)
 void otTaskletsSignalPending(otInstance *aInstance)
 {
     (void)aInstance;
+}
+
+// microcoap
+extern void resource_setup(const coap_resource_t *resources);
+extern coap_resource_t resources[];
+
+otInstance *mInstance;
+otUdpSocket mSocket;
+otSockAddr sockaddr;
+otMessageInfo mPeer;
+
+void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
+{
+    int rc;
+    coap_packet_t pkt;
+    uint8_t buf[256];
+    uint16_t payloadLength = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
+
+    // Get data from message and copy it to buffer
+    otMessageRead(aMessage, otMessageGetOffset(aMessage), buf, payloadLength);
+
+    // Parse buffer if data is CoAP
+    if ((rc = coap_parse(buf, payloadLength, &pkt)) < COAP_ERR)
+    {
+        size_t buflen = sizeof(buf);
+        coap_packet_t rsppkt;
+
+        // Get data from resources
+        coap_handle_request(resources, &pkt, &rsppkt);
+
+        // Build response packet, message and send it
+        if ((rc = coap_build(&rsppkt, buf, &buflen)) < COAP_ERR)
+        {
+            otMessage *message;
+            message = otUdpNewMessage(mInstance, true);
+            otMessageSetLength(message, buflen);
+            otMessageWrite(message, 0, buf, buflen);
+
+            // send back to client
+            otUdpSend(&mSocket, message, &mPeer);
+        }
+    }
+
+    mPeer = *aMessageInfo;
+    (void) aContext;
 }
 
 int main(int argc, char *argv[])
@@ -88,6 +138,25 @@ int main(int argc, char *argv[])
 #if OPENTHREAD_ENABLE_DIAG
     otDiagInit(sInstance);
 #endif
+
+    // Enable basic Thread config
+    otLinkSetPanId(sInstance, 0x1234);
+    otIp6SetEnabled(sInstance, true);
+    otThreadSetEnabled(sInstance, true);
+
+    // Create variables
+    memset(&mSocket, 0, sizeof(mSocket));
+    memset(&sockaddr, 0, sizeof(otSockAddr));
+    memset(&mPeer, 0, sizeof(mPeer));
+    mInstance = sInstance;
+    sockaddr.mPort = 6666;
+
+    // Bind Port
+    otUdpOpen(sInstance, &mSocket, (otUdpReceive) &onUdpPacket, &mSocket);
+    otUdpBind(&mSocket, &sockaddr);
+
+    // Initialize resources
+    resource_setup(resources);
 
     while (1)
     {
