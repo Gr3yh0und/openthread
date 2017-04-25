@@ -50,6 +50,7 @@ SOURCES_COMMON                                                         = \
 if OPENTHREAD_ENABLE_BUILTIN_MBEDTLS
 LDADD_COMMON                                                          += \
     $(top_builddir)/third_party/mbedtls/libmbedcrypto.a                  \
+    $(top_builddir)/third_party/microcoap/libmicrocoap.a                 \
     $(NULL)
 endif # OPENTHREAD_ENABLE_BUILTIN_MBEDTLS
 

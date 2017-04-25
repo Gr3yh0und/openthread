@@ -33,6 +33,7 @@ EXTRA_DIST                              = \
     nlbuild-autotools                     \
     openthread-test-driver                \
     NordicSemiconductor                   \
+    microcoap                             \
     $(NULL)
 
 if OPENTHREAD_EXAMPLES_EFR32
@@ -45,11 +46,13 @@ endif
 
 DIST_SUBDIRS                            = \
     mbedtls                               \
+    microcoap                             \
     $(NULL)
 
 if OPENTHREAD_ENABLE_BUILTIN_MBEDTLS
 SUBDIRS                                 = \
     mbedtls                               \
+    microcoap                             \
     $(NULL)
 endif # OPENTHREAD_ENABLE_BUILTIN_MBEDTLS
 
