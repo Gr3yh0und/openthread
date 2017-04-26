@@ -36,9 +36,13 @@
 
 #include <openthread/cli.h>
 #include <openthread/diag.h>
-#include <openthread/openthread.h>
 #include <openthread/platform/platform.h>
+#include <openthread/openthread.h>
 
+#include <string.h>
+
+#include "openthread/udp.h"
+#include "../third_party/tinydtls/dtls.h"
 #ifdef OPENTHREAD_MULTIPLE_INSTANCE
 void *otPlatCAlloc(size_t aNum, size_t aSize)
 {
@@ -54,6 +58,60 @@ void otPlatFree(void *aPtr)
 void otTaskletsSignalPending(otInstance *aInstance)
 {
     (void)aInstance;
+}
+
+otInstance *mInstance;
+otUdpSocket mSocket;
+otSockAddr sockaddr;
+otMessageInfo mPeer;
+dtls_context_t *the_context = NULL;
+
+int test(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len){
+	(void) ctx;
+	(void) session;
+	(void) data;
+	(void) len;
+	return 1;
+}
+
+static dtls_handler_t cb = {
+  .write = test,
+  .read  = test,
+  .event = NULL,
+  .get_psk_info = NULL,
+};
+
+/*int dtls_handle_read(struct dtls_context_t *ctx) {
+  int *fd;
+  session_t session;
+  static uint8 buf[DTLS_MAX_BUF];
+  int len;
+  fd = dtls_get_app_data(ctx);
+  assert(fd);
+  session.size = sizeof(session.addr);
+  len = recvfrom(*fd, buf, sizeof(buf), 0, &session.addr.sa, &session.size);
+
+  return len < 0 ? len : dtls_handle_message(ctx, &session, buf, len);
+}*/
+
+
+void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
+{
+    //int rc;
+    //coap_packet_t pkt;
+
+    uint8_t buf[256];
+    uint16_t payloadLength = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
+
+    // Get data from message and copy it to buffer
+    otMessageRead(aMessage, otMessageGetOffset(aMessage), buf, payloadLength);
+
+    session_t session;
+    session.size = sizeof(session.addr);
+    dtls_handle_message(the_context, &session, buf, payloadLength);
+
+    mPeer = *aMessageInfo;
+    (void) aContext;
 }
 
 int main(int argc, char *argv[])
@@ -87,6 +145,29 @@ int main(int argc, char *argv[])
 #if OPENTHREAD_ENABLE_DIAG
     otDiagInit(sInstance);
 #endif
+
+    // Enable basic Thread config
+	otLinkSetPanId(sInstance, 0x1234);
+	otIp6SetEnabled(sInstance, true);
+	otThreadSetEnabled(sInstance, true);
+
+	// Create variables
+	memset(&mSocket, 0, sizeof(mSocket));
+	memset(&sockaddr, 0, sizeof(otSockAddr));
+	memset(&mPeer, 0, sizeof(mPeer));
+	mInstance = sInstance;
+	sockaddr.mPort = 6666;
+
+	// Bind Port
+	otUdpOpen(sInstance, &mSocket, (otUdpReceive) &onUdpPacket, &mSocket);
+	otUdpBind(&mSocket, &sockaddr);
+
+	dtls_init();
+	the_context = dtls_new_context(&mSocket);
+	dtls_set_handler(the_context, &cb);
+
+	// Initialize resources
+	//resource_setup(resources);
 
     while (1)
     {
