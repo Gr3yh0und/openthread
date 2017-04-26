@@ -30,6 +30,7 @@ include $(abs_top_nlbuild_autotools_dir)/automake/pre.am
 
 EXTRA_DIST                              = \
     dialog                                \
+    tinydtls                              \
     nlbuild-autotools                     \
     openthread-test-driver                \
     NordicSemiconductor                   \
@@ -45,11 +46,13 @@ endif
 
 DIST_SUBDIRS                            = \
     mbedtls                               \
+    tinydtls                              \
     $(NULL)
 
 if OPENTHREAD_ENABLE_BUILTIN_MBEDTLS
 SUBDIRS                                 = \
     mbedtls                               \
+    tinydtls                              \
     $(NULL)
 endif # OPENTHREAD_ENABLE_BUILTIN_MBEDTLS
 
