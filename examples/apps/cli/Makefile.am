@@ -38,6 +38,7 @@ CPPFLAGS_COMMON                                                        = \
     $(NULL)
 
 LDADD_COMMON                                                           = \
+    $(top_builddir)/third_party/tinydtls/libtinydtls.a                   \
     $(NULL)
 
 LDFLAGS_COMMON                                                         = \
