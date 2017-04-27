@@ -63,7 +63,6 @@ void otTaskletsSignalPending(otInstance *aInstance)
 otInstance *mInstance;
 otUdpSocket mSocket;
 otSockAddr sockaddr;
-otMessageInfo mPeer;
 dtls_context_t *the_context = NULL;
 
 int test(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len){
@@ -97,20 +96,21 @@ static dtls_handler_t cb = {
 
 void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
-    //int rc;
-    //coap_packet_t pkt;
-
+	// Get message payload
     uint8_t buf[256];
     uint16_t payloadLength = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
-
-    // Get data from message and copy it to buffer
     otMessageRead(aMessage, otMessageGetOffset(aMessage), buf, payloadLength);
 
+    // Set current session data
     session_t session;
+    memset(&session, 0, sizeof(session_t));
     session.size = sizeof(session.addr);
+    session.addr = aMessageInfo->mPeerAddr;
+    session.messageInfo = *aMessageInfo;
+
+    // Forward session and payload data to TinyDTLS
     dtls_handle_message(the_context, &session, buf, payloadLength);
 
-    mPeer = *aMessageInfo;
     (void) aContext;
 }
 
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
     otDiagInit(sInstance);
 #endif
 
-    // Enable basic Thread config
+    // Enable basic Thread config, ToDo: REMOVE THIS
 	otLinkSetPanId(sInstance, 0x1234);
 	otIp6SetEnabled(sInstance, true);
 	otThreadSetEnabled(sInstance, true);
@@ -154,20 +154,17 @@ int main(int argc, char *argv[])
 	// Create variables
 	memset(&mSocket, 0, sizeof(mSocket));
 	memset(&sockaddr, 0, sizeof(otSockAddr));
-	memset(&mPeer, 0, sizeof(mPeer));
 	mInstance = sInstance;
-	sockaddr.mPort = 6666;
+	sockaddr.mPort = 6666; // ToDo: hardcoded
 
 	// Bind Port
 	otUdpOpen(sInstance, &mSocket, (otUdpReceive) &onUdpPacket, &mSocket);
 	otUdpBind(&mSocket, &sockaddr);
 
+	// Init DTLS
 	dtls_init();
 	the_context = dtls_new_context(&mSocket);
-	dtls_set_handler(the_context, &cb);
-
-	// Initialize resources
-	//resource_setup(resources);
+	dtls_set_handler(the_context, &dtls_callback);
 
     while (1)
     {
