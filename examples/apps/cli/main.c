@@ -208,6 +208,14 @@ int main(int argc, char *argv[])
 	otIp6SetEnabled(sInstance, true);
 	otThreadSetEnabled(sInstance, true);
 
+	// Add specific IP address, ToDo: REMOVE THIS
+	otNetifAddress aAddress;
+	otIp6AddressFromString("fdde:ad00:beef:0:5d12:76b8:948e:5b42", &aAddress.mAddress);
+	aAddress.mPrefixLength = 64;
+	aAddress.mPreferred = true;
+	aAddress.mValid = true;
+	otIp6AddUnicastAddress(sInstance, &aAddress);
+
 	// Create variables
 	memset(&mSocket, 0, sizeof(mSocket));
 	memset(&sockaddr, 0, sizeof(otSockAddr));
