@@ -42,6 +42,7 @@
 
 #include "../third_party/tinydtls/dtls.h"
 #include "openthread/udp.h"
+#include "openthread/platform/alarm.h"
 #include <string.h>
 
 #ifdef OPENTHREAD_MULTIPLE_INSTANCE
@@ -61,12 +62,60 @@ void otTaskletsSignalPending(otInstance *aInstance)
     (void)aInstance;
 }
 
+#ifdef DTLS_PSK
+/* This function is the "key store" for tinyDTLS. It is called to
+ * retrieve a key for the given identity within this particular
+ * session. */
+static int
+get_psk_info(struct dtls_context_t *ctx, const session_t *session,
+	     dtls_credentials_type_t type,
+	     const unsigned char *id, size_t id_len,
+	     unsigned char *result, size_t result_length) {
+
+  struct keymap_t {
+    unsigned char *id;
+    size_t id_length;
+    unsigned char *key;
+    size_t key_length;
+  } psk[3] = {
+    { (unsigned char *)"Client_identity", 15,
+      (unsigned char *)"secretPSK", 9 },
+    { (unsigned char *)"default identity", 16,
+      (unsigned char *)"\x11\x22\x33", 3 },
+    { (unsigned char *)"\0", 2,
+      (unsigned char *)"", 1 }
+  };
+
+  if (type != DTLS_PSK_KEY) {
+    return 0;
+  }
+
+  if (id) {
+    uint8_t i;
+    for (i = 0; i < sizeof(psk)/sizeof(struct keymap_t); i++) {
+      if (id_len == psk[i].id_length && memcmp(id, psk[i].id, id_len) == 0) {
+	if (result_length < psk[i].key_length) {
+	  //dtls_warn("buffer too small for PSK");
+	  return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+	}
+
+	memcpy(result, psk[i].key, psk[i].key_length);
+	return psk[i].key_length;
+      }
+    }
+  }
+  (void) session;
+  (void) ctx;
+  return dtls_alert_fatal_create(DTLS_ALERT_DECRYPT_ERROR);
+}
+#endif /* DTLS_PSK */
+
 otInstance *mInstance;
 otUdpSocket mSocket;
 otSockAddr sockaddr;
 dtls_context_t *the_context = NULL;
 
-int test(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len){
+int handle_read(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len){
 	(void) ctx;
 	(void) session;
 	(void) data;
@@ -74,26 +123,34 @@ int test(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len
 	return 1;
 }
 
-static dtls_handler_t cb = {
-  .write = test,
-  .read  = test,
-  .event = NULL,
-  .get_psk_info = NULL,
+int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len){
+	otMessage *message;
+
+	// Create message and write payload
+	message = otUdpNewMessage(mInstance, true);
+	otMessageSetLength(message, len);
+	otMessageWrite(message, 0, data, len);
+
+	// Send packet to peer
+	otUdpSend(&mSocket, message, &session->messageInfo);
+
+	(void) ctx;
+	return len;
+}
+
+int handle_event(struct dtls_context_t *ctx, session_t *session, dtls_alert_level_t level, unsigned short code){
+	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d: event with level %d = %s ", otPlatAlarmGetNow(), level, code);
+	(void) ctx;
+	(void) session;
+	return 0;
+}
+
+static dtls_handler_t dtls_callback = {
+  .write = handle_write,
+  .read  = handle_read,
+  .event = handle_event,
+  .get_psk_info = get_psk_info,
 };
-
-/*int dtls_handle_read(struct dtls_context_t *ctx) {
-  int *fd;
-  session_t session;
-  static uint8 buf[DTLS_MAX_BUF];
-  int len;
-  fd = dtls_get_app_data(ctx);
-  assert(fd);
-  session.size = sizeof(session.addr);
-  len = recvfrom(*fd, buf, sizeof(buf), 0, &session.addr.sa, &session.size);
-
-  return len < 0 ? len : dtls_handle_message(ctx, &session, buf, len);
-}*/
-
 
 void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
