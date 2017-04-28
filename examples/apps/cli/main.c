@@ -115,15 +115,7 @@ otUdpSocket mSocket;
 otSockAddr sockaddr;
 dtls_context_t *the_context = NULL;
 
-int handle_read(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len){
-	(void) ctx;
-	(void) session;
-	(void) data;
-	(void) len;
-	return 1;
-}
-
-int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len){
+void send_message(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len){
 	otMessage *message;
 
 	// Create message and write payload
@@ -132,8 +124,18 @@ int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, si
 	otMessageWrite(message, 0, data, len);
 
 	// Send packet to peer
+	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d: Sending Packet!", otPlatAlarmGetNow());
 	otUdpSend(&mSocket, message, &session->messageInfo);
+	(void) ctx;
+}
 
+int handle_read(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len){
+	send_message(ctx, session, data, len);
+	return 0;
+}
+
+int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len){
+	send_message(ctx, session, data, len);
 	(void) ctx;
 	return len;
 }
@@ -167,6 +169,7 @@ void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMess
     session.messageInfo = *aMessageInfo;
 
     // Forward session and payload data to TinyDTLS
+    otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d: Receiving Packet!", otPlatAlarmGetNow());
     dtls_handle_message(the_context, &session, buf, payloadLength);
 
     (void) aContext;
