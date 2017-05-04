@@ -41,9 +41,17 @@
 #include <assert.h>
 
 #include "../third_party/tinydtls/dtls.h"
+#include "../third_party/tinydtls/dtls_debug.h"
 #include "openthread/udp.h"
 #include "openthread/platform/alarm.h"
 #include <string.h>
+#include <stdio.h>
+
+/* OpenThread variables */
+otInstance *mInstance;
+otUdpSocket mSocket;
+otSockAddr sockaddr;
+dtls_context_t *the_context = NULL;
 
 #ifdef OPENTHREAD_MULTIPLE_INSTANCE
 void *otPlatCAlloc(size_t aNum, size_t aSize)
@@ -95,7 +103,6 @@ get_psk_info(struct dtls_context_t *ctx, const session_t *session,
     for (i = 0; i < sizeof(psk)/sizeof(struct keymap_t); i++) {
       if (id_len == psk[i].id_length && memcmp(id, psk[i].id, id_len) == 0) {
 	if (result_length < psk[i].key_length) {
-	  //dtls_warn("buffer too small for PSK");
 	  return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
 	}
 
@@ -110,12 +117,9 @@ get_psk_info(struct dtls_context_t *ctx, const session_t *session,
 }
 #endif /* DTLS_PSK */
 
-otInstance *mInstance;
-otUdpSocket mSocket;
-otSockAddr sockaddr;
-dtls_context_t *the_context = NULL;
-
-void send_message(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len){
+/* Sends a new OpenThread message to a given address */
+void send_message(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len)
+{
 	otMessage *message;
 
 	// Create message and write payload
@@ -124,29 +128,59 @@ void send_message(struct dtls_context_t *ctx, session_t *session, uint8 *data, s
 	otMessageWrite(message, 0, data, len);
 
 	// Send packet to peer
-	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d: Sending Packet!", otPlatAlarmGetNow());
 	otUdpSend(&mSocket, message, &session->messageInfo);
 	(void) ctx;
 }
 
-int handle_read(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len){
-	send_message(ctx, session, data, len);
-	return 0;
-}
+/* Handler that is called when a packet is received */
+int handle_read(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len)
+{
+	#ifndef NDEBUG
+	char buffer[len];
+	snprintf(buffer, sizeof buffer, "%s", data);
+	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Received Packet! (size=%d, content=%s)", otPlatAlarmGetNow(), len, buffer);
+	#endif
 
-int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len){
-	send_message(ctx, session, data, len);
-	(void) ctx;
-	return len;
-}
+	// Handle application data here
+	// function(buffer, data);
 
-int handle_event(struct dtls_context_t *ctx, session_t *session, dtls_alert_level_t level, unsigned short code){
-	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d: event with level %d = %s ", otPlatAlarmGetNow(), level, code);
+	(void) data;
+	(void) len;
 	(void) ctx;
 	(void) session;
 	return 0;
 }
 
+/* Handler that is called when a packet should be sent */
+int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len)
+{
+	#ifndef NDEBUG
+	char buffer[len];
+	snprintf(buffer, sizeof buffer, "%s", data);
+	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Sending Packet! (size=%d, content=%s)", otPlatAlarmGetNow(), len, buffer);
+	#endif
+
+	// Sending DTLS encrypted application data over UDP
+	send_message(ctx, session, data, len);
+
+	return len;
+}
+
+/* Handler that is called when an event occurs */
+int handle_event(struct dtls_context_t *ctx, session_t *session, dtls_alert_level_t level, unsigned short code)
+{
+	#ifndef NDEBUG
+	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Event happened! (level %d, code %s)", otPlatAlarmGetNow(), level, code);
+	#endif
+
+	// Handle event here
+
+	(void) ctx;
+	(void) session;
+	return 0;
+}
+
+/* Definition of executed handlers */
 static dtls_handler_t dtls_callback = {
   .write = handle_write,
   .read  = handle_read,
@@ -154,6 +188,7 @@ static dtls_handler_t dtls_callback = {
   .get_psk_info = get_psk_info,
 };
 
+/* Handler that is called when a raw UDP packet is receiver*/
 void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
 	// Get message payload
@@ -169,7 +204,7 @@ void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMess
     session.messageInfo = *aMessageInfo;
 
     // Forward session and payload data to TinyDTLS
-    otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d: Receiving Packet!", otPlatAlarmGetNow());
+    otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Receiving Packet!", otPlatAlarmGetNow());
     dtls_handle_message(the_context, &session, buf, payloadLength);
 
     (void) aContext;
@@ -224,14 +259,15 @@ int main(int argc, char *argv[])
 	memset(&mSocket, 0, sizeof(mSocket));
 	memset(&sockaddr, 0, sizeof(otSockAddr));
 	mInstance = sInstance;
-	sockaddr.mPort = 6666; // ToDo: hardcoded
+	sockaddr.mPort = 6666; // ToDo: hard coded
 
 	// Bind Port
 	otUdpOpen(sInstance, &mSocket, (otUdpReceive) &onUdpPacket, &mSocket);
 	otUdpBind(&mSocket, &sockaddr);
 
-	// Init DTLS
+	// Initialise DTLS basics and setting log level
 	dtls_init();
+	dtls_set_log_level(DTLS_LOG_WARN);
 	the_context = dtls_new_context(&mSocket);
 	dtls_set_handler(the_context, &dtls_callback);
 
