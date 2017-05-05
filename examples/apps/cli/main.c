@@ -34,6 +34,7 @@
 
 #include <assert.h>
 
+#include "../third_party/microcoap/coap.h"
 #include "../third_party/tinydtls/dtls.h"
 #include "../third_party/tinydtls/dtls_debug.h"
 #include "openthread/udp.h"
@@ -51,6 +52,10 @@ otInstance *mInstance;
 otSockAddr sockaddr;
 otUdpSocket mSocket;
 dtls_context_t *the_context = NULL;
+
+/* microcoap variables */
+extern void resource_setup(const coap_resource_t *resources);
+extern coap_resource_t resources[];
 
 #ifdef OPENTHREAD_MULTIPLE_INSTANCE
 void *otPlatCAlloc(size_t aNum, size_t aSize)
@@ -139,14 +144,26 @@ int handle_read(struct dtls_context_t *ctx, session_t *session, uint8 *data, siz
 	snprintf(buffer, sizeof buffer, "%s", data);
 	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Received Packet! (size=%d, content=%s)", otPlatAlarmGetNow(), len, buffer);
 	#endif
+	uint8_t buf[256];
+	memcpy(buf, data, len);
 
-	// Handle application data here
-	// function(buffer, data);
+	// Parse buffer if data is CoAP
+	coap_packet_t pkt;
+	if ((coap_parse(buf, len, &pkt)) < COAP_ERR)
+	{
+		size_t buflen = sizeof(buf);
+		coap_packet_t rsppkt;
 
-	(void) data;
-	(void) len;
-	(void) ctx;
-	(void) session;
+		// Get data from resources
+		coap_handle_request(resources, &pkt, &rsppkt);
+
+		// Build response packet
+		if ((coap_build(&rsppkt, buf, &buflen)) < COAP_ERR)
+		{
+			// Send answer packet encrypted
+			dtls_write(ctx, session, buf, len);
+		}
+	}
 	return 0;
 }
 
@@ -269,6 +286,9 @@ int main(int argc, char *argv[])
 	dtls_set_log_level(DTLS_LOG_WARN);
 	the_context = dtls_new_context(&mSocket);
 	dtls_set_handler(the_context, &dtls_callback);
+
+	// Initialise COAP resources
+	resource_setup(resources);
 
     while (1)
     {

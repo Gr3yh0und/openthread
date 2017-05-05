@@ -1279,6 +1279,7 @@ src/diag/Makefile
 third_party/Makefile
 third_party/mbedtls/Makefile
 third_party/tinydtls/Makefile
+third_party/microcoap/Makefile
 examples/Makefile
 examples/apps/Makefile
 examples/apps/cli/Makefile
