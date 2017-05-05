@@ -138,31 +138,28 @@ void send_message(struct dtls_context_t *ctx, session_t *session, uint8 *data, s
 }
 
 /* Handler that is called when a packet is received */
-int handle_read(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len)
+int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data, size_t length)
 {
 	#ifndef NDEBUG
-	char buffer[len];
-	snprintf(buffer, sizeof buffer, "%s", data);
-	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Received Packet! (size=%d, content=%s)", otPlatAlarmGetNow(), len, buffer);
+	char loggingBuffer[length];
+	snprintf(loggingBuffer, sizeof loggingBuffer, "%s", data);
+	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Received Packet! (size=%d, content=%s)", otPlatAlarmGetNow(), length, loggingBuffer);
 	#endif
-	uint8_t buf[256];
-	memcpy(buf, data, len);
 
-	// Parse buffer if data is CoAP
-	coap_packet_t pkt;
-	if ((coap_parse(buf, len, &pkt)) < COAP_ERR)
+	coap_packet_t requestPacket, responsePacket;
+	uint8_t responseBuffer[DTLS_MAX_BUF];
+	size_t responseBufferLength = sizeof(responseBuffer);
+
+	if ((coap_parse(data, length, &requestPacket)) < COAP_ERR)
 	{
-		size_t buflen = sizeof(buf);
-		coap_packet_t rsppkt;
-
 		// Get data from resources
-		coap_handle_request(resources, &pkt, &rsppkt);
+		coap_handle_request(resources, &requestPacket, &responsePacket);
 
 		// Build response packet
-		if ((coap_build(&rsppkt, buf, &buflen)) < COAP_ERR)
+		if ((coap_build(&responsePacket, responseBuffer, &responseBufferLength)) < COAP_ERR)
 		{
-			// Send answer packet encrypted
-			dtls_write(ctx, session, buf, len);
+			// Send response packet decrypted over DTLS
+			dtls_write(context, session, responseBuffer, responseBufferLength);
 		}
 	}
 	return 0;
@@ -209,9 +206,9 @@ static dtls_handler_t dtls_callback = {
 void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
 	// Get message payload
-    uint8_t buf[256];
+    uint8_t payload[DTLS_MAX_BUF];
     uint16_t payloadLength = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
-    otMessageRead(aMessage, otMessageGetOffset(aMessage), buf, payloadLength);
+    otMessageRead(aMessage, otMessageGetOffset(aMessage), payload, payloadLength);
 
     // Set current session data
     session_t session;
@@ -222,7 +219,7 @@ void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMess
 
     // Forward session and payload data to TinyDTLS
     otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Receiving Packet!", otPlatAlarmGetNow());
-    dtls_handle_message(the_context, &session, buf, payloadLength);
+    dtls_handle_message(the_context, &session, payload, payloadLength);
 
     (void) aContext;
 }
