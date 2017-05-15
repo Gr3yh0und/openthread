@@ -868,6 +868,36 @@ AM_CONDITIONAL([OPENTHREAD_ENABLE_DEFAULT_LOGGING], [test "${enable_default_logg
 AC_DEFINE_UNQUOTED([OPENTHREAD_ENABLE_DEFAULT_LOGGING],[${OPENTHREAD_ENABLE_DEFAULT_LOGGING}],[Define to 1 if you want to enable default logging])
 
 #
+# Secure CoAP Server example
+#
+
+AC_ARG_ENABLE(coaps,
+    [AS_HELP_STRING([--enable-coaps],[Enable secure CoAP server support @<:@default=no@:>@.])],
+    [
+        case "${enableval}" in
+
+        no|yes)
+            enable_coaps=${enableval}
+            ;;
+
+        *)
+            AC_MSG_ERROR([Invalid value ${enable_coaps} for --enable_coaps])
+            ;;
+        esac
+    ],
+    [enable_coaps=no])
+
+if test "$enable_coaps" = "yes"; then
+    OPENTHREAD_ENABLE_COAPS=1
+else
+    OPENTHREAD_ENABLE_COAPS=0
+fi
+
+AC_SUBST(OPENTHREAD_ENABLE_COAPS)
+AM_CONDITIONAL([OPENTHREAD_ENABLE_COAPS], [test "${enable_coaps}" = "yes"])
+AC_DEFINE_UNQUOTED([OPENTHREAD_ENABLE_COAPS],[${OPENTHREAD_ENABLE_COAPS}],[Define to 1 if you want to enable the secure CoAP server])
+
+#
 # Log for certification test
 #
 
@@ -1284,6 +1314,7 @@ examples/Makefile
 examples/apps/Makefile
 examples/apps/cli/Makefile
 examples/apps/ncp/Makefile
+examples/apps/coaps/Makefile
 examples/platforms/Makefile
 examples/platforms/cc2538/Makefile
 examples/platforms/cc2650/Makefile
@@ -1379,6 +1410,7 @@ AC_MSG_NOTICE([
   OpenThread Legacy network support         : ${enable_legacy}
   OpenThread Default logging support        : ${enable_default_logging}
   OpenThread Certification log support      : ${enable_cert_log}
+  OpenThread CoAP secure server support     : ${enable_coaps}
   OpenThread DHCPv6 Server support          : ${enable_dhcp6_server}
   OpenThread DHCPv6 Client support          : ${enable_dhcp6_client}
   OpenThread DNS Client support             : ${enable_dns_client}

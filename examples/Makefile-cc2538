@@ -44,6 +44,8 @@ BuildJobs                      ?= 10
 configure_OPTIONS               = \
     --enable-cli-app=all          \
     --enable-ncp-app=all          \
+    --enable-coaps                \
+    --enable-coaps-cli            \
     --with-ncp-bus=uart           \
     --enable-diag                 \
     --with-examples=cc2538        \
