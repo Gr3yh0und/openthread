@@ -898,6 +898,36 @@ AM_CONDITIONAL([OPENTHREAD_ENABLE_COAPS], [test "${enable_coaps}" = "yes"])
 AC_DEFINE_UNQUOTED([OPENTHREAD_ENABLE_COAPS],[${OPENTHREAD_ENABLE_COAPS}],[Define to 1 if you want to enable the secure CoAP server])
 
 #
+# Secure CoAP Server example with command line interface
+#
+
+AC_ARG_ENABLE(coaps-cli,
+    [AS_HELP_STRING([--enable-coaps-cli],[Enable the command line interface for the secure CoAP server example @<:@default=no@:>@.])],
+    [
+        case "${enableval}" in
+
+        no|yes)
+            enable_coaps_cli=${enableval}
+            ;;
+
+        *)
+            AC_MSG_ERROR([Invalid value ${enable_coaps_cli} for --enable_coaps_cli])
+            ;;
+        esac
+    ],
+    [enable_coaps_cli=no])
+
+if test "$enable_coaps_cli" = "yes"; then
+    OPENTHREAD_ENABLE_COAPS_CLI=1
+else
+    OPENTHREAD_ENABLE_COAPS_CLI=0
+fi
+
+AC_SUBST(OPENTHREAD_ENABLE_COAPS_CLI)
+AM_CONDITIONAL([OPENTHREAD_ENABLE_COAPS_CLI], [test "${enable_coaps_cli}" = "yes"])
+AC_DEFINE_UNQUOTED([OPENTHREAD_ENABLE_COAPS_CLI],[${OPENTHREAD_ENABLE_COAPS_CLI}],[Define to 1 if you want to enable the command line interface on the secure CoAP server example])
+
+#
 # Log for certification test
 #
 
@@ -1411,6 +1441,7 @@ AC_MSG_NOTICE([
   OpenThread Default logging support        : ${enable_default_logging}
   OpenThread Certification log support      : ${enable_cert_log}
   OpenThread CoAP secure server support     : ${enable_coaps}
+  OpenThread CoAP secure server CLI support : ${enable_coaps_cli}
   OpenThread DHCPv6 Server support          : ${enable_dhcp6_server}
   OpenThread DHCPv6 Client support          : ${enable_dhcp6_client}
   OpenThread DNS Client support             : ${enable_dns_client}

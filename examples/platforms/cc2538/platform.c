@@ -52,7 +52,9 @@ void PlatformProcessDrivers(otInstance *aInstance)
 
     // should sleep and wait for interrupts here
 
+#if OPENTHREAD_ENABLE_COAPS_CLI == 1 || OPENTHREAD_ENABLE_COAPS == 0
     cc2538UartProcess();
+#endif
     cc2538RadioProcess(aInstance);
     cc2538AlarmProcess(aInstance);
 }
