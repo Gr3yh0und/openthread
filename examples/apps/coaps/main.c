@@ -52,6 +52,11 @@
 #define OPENTHREAD_ENABLE_TINYDTLS 1
 #endif
 
+// Define default Port of UDP server
+#ifndef OPENTHREAD_UDP_PORT
+#define OPENTHREAD_UDP_PORT 6666
+#endif
+
 /* TinyDTLS variables */
 #if OPENTHREAD_ENABLE_TINYDTLS
 #include "../third_party/tinydtls/dtls.h"
@@ -70,6 +75,7 @@ extern void resource_setup(const coap_resource_t *resources);
 extern coap_resource_t resources[];
 #endif
 
+// Disable Logging without a CLI
 #if OPENTHREAD_ENABLE_COAPS_CLI == 0
 #define otPlatLog(...)
 #endif
@@ -99,41 +105,37 @@ static int get_psk_info(struct dtls_context_t *ctx, const session_t *session,
 						 dtls_credentials_type_t type,
 						 const unsigned char *id, size_t id_len,
 						 unsigned char *result, size_t result_length) {
+	struct keymap_t {
+		unsigned char *id;
+		size_t id_length;
+		unsigned char *key;
+		size_t key_length;
+	} psk[3] = {
+			{ (unsigned char *)"Client_identity", 15, (unsigned char *)"secretPSK", 9 },
+			{ (unsigned char *)"default identity", 16, (unsigned char *)"\x11\x22\x33", 3 },
+			{ (unsigned char *)"\0", 2, (unsigned char *)"", 1 }
+	};
 
-  struct keymap_t {
-    unsigned char *id;
-    size_t id_length;
-    unsigned char *key;
-    size_t key_length;
-  } psk[3] = {
-    { (unsigned char *)"Client_identity", 15,
-      (unsigned char *)"secretPSK", 9 },
-    { (unsigned char *)"default identity", 16,
-      (unsigned char *)"\x11\x22\x33", 3 },
-    { (unsigned char *)"\0", 2,
-      (unsigned char *)"", 1 }
-  };
-
-  if (type != DTLS_PSK_KEY) {
-    return 0;
-  }
-
-  if (id) {
-    uint8_t i;
-    for (i = 0; i < sizeof(psk)/sizeof(struct keymap_t); i++) {
-      if (id_len == psk[i].id_length && memcmp(id, psk[i].id, id_len) == 0) {
-	if (result_length < psk[i].key_length) {
-	  return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+	if (type != DTLS_PSK_KEY) {
+		return 0;
 	}
 
-	memcpy(result, psk[i].key, psk[i].key_length);
-	return psk[i].key_length;
-      }
-    }
-  }
-  (void) session;
-  (void) ctx;
-  return dtls_alert_fatal_create(DTLS_ALERT_DECRYPT_ERROR);
+	if (id) {
+		uint8_t i;
+		for (i = 0; i < sizeof(psk)/sizeof(struct keymap_t); i++) {
+			if (id_len == psk[i].id_length && memcmp(id, psk[i].id, id_len) == 0) {
+				if (result_length < psk[i].key_length) {
+					return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+				}
+
+				memcpy(result, psk[i].key, psk[i].key_length);
+				return psk[i].key_length;
+			}
+		}
+	}
+	(void) session;
+	(void) ctx;
+	return dtls_alert_fatal_create(DTLS_ALERT_DECRYPT_ERROR);
 }
 #endif /* DTLS_PSK */
 
@@ -200,7 +202,7 @@ int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, si
 int handle_event(struct dtls_context_t *ctx, session_t *session, dtls_alert_level_t level, unsigned short code)
 {
 	#ifndef NDEBUG
-	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Event occurred! (level %d, code %s )", otPlatAlarmGetNow(), level, code);
+	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Event occurred! (level %d, code %d )", otPlatAlarmGetNow(), level, code);
 	#endif
 
 	// Handle event here
@@ -301,7 +303,7 @@ int main(int argc, char *argv[])
 	memset(&mSocket, 0, sizeof(mSocket));
 	memset(&sockaddr, 0, sizeof(otSockAddr));
 	mInstance = sInstance;
-	sockaddr.mPort = 6666; // ToDo: hard coded
+	sockaddr.mPort = OPENTHREAD_UDP_PORT;
 
 	// Bind Port
 	otUdpOpen(sInstance, &mSocket, (otUdpReceive) &onUdpPacket, &mSocket);
