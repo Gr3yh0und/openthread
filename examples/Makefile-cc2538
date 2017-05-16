@@ -51,6 +51,12 @@ configure_OPTIONS               = \
     --with-examples=cc2538        \
     --with-platform-info=CC2538   \
     $(NULL)
+    
+ADDON_FLAGS                    := \
+    -DOPENTHREAD_ENABLE_UDPSERVER=1 \
+    -DOPENTHREAD_ENABLE_YACOAP=1  \
+    -DOPENTHREAD_ENABLE_TINYDTLS=1 \
+    $(NULL)
 
 DEFAULT_LOGGING ?= 1
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/common-switches.mk
@@ -78,6 +84,7 @@ CPPFLAGS                       += \
 CFLAGS                         += \
     $(COMMONCFLAGS)               \
     $(target_CFLAGS)              \
+    $(ADDON_FLAGS)                \
     $(NULL)
 
 CXXFLAGS                       += \
