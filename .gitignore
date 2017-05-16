@@ -39,3 +39,5 @@ Makefile.in
 output
 
 burn\.seg
+
+build\.old
