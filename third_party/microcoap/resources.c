@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "coap.h"
+#include "leds.h"
 
 static char light = '0';
 const uint16_t rsplen = 128;
@@ -52,10 +53,12 @@ static int handle_put_light(const coap_resource_t *resource,
     }
     if (inpkt->payload.p[0] == '1') {
         light = '1';
+        LED0_ON;
         //printf("Light ON\n");
     }
     else {
         light = '0';
+        LED0_OFF;
         //printf("Light OFF\n");
     }
     return coap_make_response(inpkt->hdr.id, &inpkt->tok,
