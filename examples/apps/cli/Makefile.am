@@ -39,7 +39,7 @@ CPPFLAGS_COMMON                                                        = \
 
 LDADD_COMMON                                                           = \
     $(top_builddir)/third_party/tinydtls/libtinydtls.a                   \
-    $(top_builddir)/third_party/microcoap/libmicrocoap.a                 \
+    $(top_builddir)/third_party/yacoap/libyacoap.a                       \
     $(NULL)
 
 LDFLAGS_COMMON                                                         = \
