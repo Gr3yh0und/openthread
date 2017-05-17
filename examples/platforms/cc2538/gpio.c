@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016, The OpenThread Authors.
+ *  Copyright (c) 2016, Zolertia
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -28,35 +28,27 @@
 
 /**
  * @file
- * @brief
- *   This file includes the platform-specific initializers.
+ *   This file implements a basic GPIO driver
+ *
  */
 
-#include "platform-cc2538.h"
-#include "leds.h"
+#include <stdbool.h>
+#include <stdint.h>
 
-otInstance *sInstance;
+#include "cc2538-reg.h"
+#include "gpio.h"
 
-void PlatformInit(int argc, char *argv[])
+static uint32_t *ioc_over;
+static uint32_t *ioc_sel;
+
+void cc2538GpioIocOver(uint8_t port, uint8_t pin, uint8_t over)
 {
-    cc2538AlarmInit();
-    cc2538RandomInit();
-    cc2538RadioInit();
-    cc2538LedsInit();
-
-    (void)argc;
-    (void)argv;
+    ioc_over = (uint32_t *)IOC_PA0_OVER;
+    ioc_over[(port << 3) + pin] = over;
 }
 
-void PlatformProcessDrivers(otInstance *aInstance)
+void cc2538GpioIocSel(uint8_t port, uint8_t pin, uint8_t sel)
 {
-    sInstance = aInstance;
-
-    // should sleep and wait for interrupts here
-
-#if OPENTHREAD_ENABLE_COAPS_CLI == 1 || OPENTHREAD_ENABLE_COAPS == 0
-    cc2538UartProcess();
-#endif
-    cc2538RadioProcess(aInstance);
-    cc2538AlarmProcess(aInstance);
+    ioc_sel = (uint32_t *)IOC_PA0_SEL;
+    ioc_sel[(port << 3) + pin] = sel;
 }

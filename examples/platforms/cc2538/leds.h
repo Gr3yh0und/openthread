@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016, The OpenThread Authors.
+ *  Copyright (c) 2016, Nest Labs, Inc.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -28,35 +28,53 @@
 
 /**
  * @file
- * @brief
- *   This file includes the platform-specific initializers.
+ *   This file implements support for the Zolertia RE-Mote RGB LEDs
+ *
  */
 
-#include "platform-cc2538.h"
-#include "leds.h"
+#ifndef LEDS_H
+#define LEDS_H
 
-otInstance *sInstance;
+#include "gpio.h"
 
-void PlatformInit(int argc, char *argv[])
-{
-    cc2538AlarmInit();
-    cc2538RandomInit();
-    cc2538RadioInit();
-    cc2538LedsInit();
-
-    (void)argc;
-    (void)argv;
-}
-
-void PlatformProcessDrivers(otInstance *aInstance)
-{
-    sInstance = aInstance;
-
-    // should sleep and wait for interrupts here
-
-#if OPENTHREAD_ENABLE_COAPS_CLI == 1 || OPENTHREAD_ENABLE_COAPS == 0
-    cc2538UartProcess();
+#ifdef __cplusplus
+ extern "C" {
 #endif
-    cc2538RadioProcess(aInstance);
-    cc2538AlarmProcess(aInstance);
-}
+
+#define LED0_PIN        0
+#define LED1_PIN        1
+#define LED2_PIN        2
+#define LED3_PIN        3
+
+#define LED0_ON         cc2538GpioSetPin(GPIO_C_NUM, LED0_PIN)
+#define LED0_OFF        cc2538GpioClearPin(GPIO_C_NUM, LED0_PIN)
+
+#define LED1_ON         cc2538GpioSetPin(GPIO_C_NUM, LED1_PIN)
+#define LED1_OFF        cc2538GpioClearPin(GPIO_C_NUM, LED1_PIN)
+
+#define LED2_ON         cc2538GpioSetPin(GPIO_C_NUM, LED2_PIN)
+#define LED2_OFF        cc2538GpioClearPin(GPIO_C_NUM, LED2_PIN)
+
+#define LED3_ON         cc2538GpioSetPin(GPIO_C_NUM, LED3_PIN)
+#define LED3_OFF        cc2538GpioClearPin(GPIO_C_NUM, LED3_PIN)
+
+#define LED_ALL_OFF     LED0_OFF;   \
+                        LED1_OFF;   \
+                        LED2_OFF;   \
+                        LED3_OFF
+
+// White
+#define LED_ALL_ON      LED0_ON;    \
+                        LED1_ON;    \
+                        LED2_ON;    \
+                        LED3_ON
+
+void cc2538LedsInit(void);
+
+
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
+#endif // LEDS_H_
+
