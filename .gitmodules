@@ -1,0 +1,6 @@
+[submodule "third_party/tinydtls"]
+	path = third_party/tinydtls
+	url = https://github.com/Gr3yh0und/tinydtls.git
+[submodule "third_party/yacoap"]
+	path = third_party/yacoap
+	url = https://github.com/Gr3yh0und/YaCoAP.git
