@@ -188,6 +188,7 @@ const struct Command Interpreter::sCommands[] =
     { "singleton", &Interpreter::ProcessSingleton },
     { "state", &Interpreter::ProcessState },
     { "thread", &Interpreter::ProcessThread },
+    { "txpowermax", &Interpreter::ProcessTxPowerMax },
     { "version", &Interpreter::ProcessVersion },
     { "whitelist", &Interpreter::ProcessWhitelist },
 };
@@ -469,8 +470,8 @@ void Interpreter::ProcessBufferInfo(int argc, char *argv[])
     sServer->OutputFormat("mpl: %d %d\r\n", bufferInfo.mMplMessages, bufferInfo.mMplBuffers);
     sServer->OutputFormat("mle: %d %d\r\n", bufferInfo.mMleMessages, bufferInfo.mMleBuffers);
     sServer->OutputFormat("arp: %d %d\r\n", bufferInfo.mArpMessages, bufferInfo.mArpBuffers);
-    sServer->OutputFormat("coap client: %d %d\r\n", bufferInfo.mCoapClientMessages, bufferInfo.mCoapClientBuffers);
-    sServer->OutputFormat("coap server: %d %d\r\n", bufferInfo.mCoapServerMessages, bufferInfo.mCoapServerBuffers);
+    sServer->OutputFormat("coap: %d %d\r\n", bufferInfo.mCoapMessages, bufferInfo.mCoapBuffers);
+    sServer->OutputFormat("coap secure: %d %d\r\n", bufferInfo.mCoapSecureMessages, bufferInfo.mCoapSecureBuffers);
 
     AppendResult(kThreadError_None);
 }
@@ -2492,6 +2493,25 @@ void Interpreter::ProcessThread(int argc, char *argv[])
 exit:
     (void)argc;
     (void)argv;
+    AppendResult(error);
+}
+
+void Interpreter::ProcessTxPowerMax(int argc, char *argv[])
+{
+    ThreadError error = kThreadError_None;
+    long value;
+
+    if (argc == 0)
+    {
+        sServer->OutputFormat("%d dBm\r\n", otLinkGetMaxTransmitPower(mInstance));
+    }
+    else
+    {
+        SuccessOrExit(error = ParseLong(argv[0], value));
+        otLinkSetMaxTransmitPower(mInstance, static_cast<int8_t>(value));
+    }
+
+exit:
     AppendResult(error);
 }
 
