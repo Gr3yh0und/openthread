@@ -34,7 +34,7 @@
 
 #include <assert.h>
 
-#include "../third_party/microcoap/coap.h"
+#include "../third_party/yacoap/coap.h"
 #include "../third_party/tinydtls/dtls.h"
 #include "../third_party/tinydtls/dtls_debug.h"
 #include "openthread/udp.h"
