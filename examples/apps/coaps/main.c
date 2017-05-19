@@ -43,20 +43,26 @@
 #include <string.h>
 #include <stdio.h>
 
+#if OPENTHREAD_ENABLE_UDPSERVER == 1
 #include "dtls-server.h"
+#endif
+
+#if OPENTHREAD_ENABLE_UDPCLIENT == 1
+#include "dtls-client.h"
+#endif
 
 // Define default Port of UDP server
 #ifndef OPENTHREAD_UDP_PORT
 #define OPENTHREAD_UDP_PORT 6666
 #endif
 
-/* UDP server variables*/
-#if OPENTHREAD_ENABLE_UDPSERVER
+/* UDP server and client */
+#if OPENTHREAD_ENABLE_UDPSERVER == 1 || OPENTHREAD_ENABLE_UDPCLIENT == 1
 extern void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo);
 #endif
 
 /* TinyDTLS variables */
-#if OPENTHREAD_ENABLE_TINYDTLS
+#if OPENTHREAD_ENABLE_TINYDTLS == 1
 #define DTLS_LOG_LEVEL DTLS_LOG_WARN
 otInstance *mInstance;
 otSockAddr sockaddr;
@@ -65,7 +71,7 @@ dtls_context_t *the_context = NULL;
 #endif
 
 /* YaCoAP variables */
-#if OPENTHREAD_ENABLE_YACOAP
+#if OPENTHREAD_ENABLE_YACOAP == 1
 extern void resource_setup(const coap_resource_t *resources);
 extern coap_resource_t resources[];
 #endif
@@ -134,7 +140,7 @@ int main(int argc, char *argv[])
 	aAddress.mValid = true;
 	otIp6AddUnicastAddress(sInstance, &aAddress);
 
-#if OPENTHREAD_ENABLE_UDPSERVER
+#if OPENTHREAD_ENABLE_UDPSERVER == 1 || OPENTHREAD_ENABLE_UDPCLIENT == 1
 	// Create variables
 	memset(&mSocket, 0, sizeof(mSocket));
 	memset(&sockaddr, 0, sizeof(otSockAddr));
@@ -146,20 +152,22 @@ int main(int argc, char *argv[])
 	otUdpBind(&mSocket, &sockaddr);
 #endif
 
-#if OPENTHREAD_ENABLE_TINYDTLS
+#if OPENTHREAD_ENABLE_TINYDTLS == 1
 	// Initialise DTLS basics and setting log level
 	dtls_init();
 	dtls_set_log_level(DTLS_LOG_LEVEL);
-#if OPENTHREAD_ENABLE_UDPSERVER
-	// Create server context
 	the_context = dtls_new_context(&mSocket);
-	dtls_set_handler(the_context, &dtls_callback);
-#if OPENTHREAD_ENABLE_YACOAP
+#if OPENTHREAD_ENABLE_UDPSERVER == 1
+	// Create server context
+	dtls_set_handler(the_context, &dtls_callback_server);
+#if OPENTHREAD_ENABLE_YACOAP == 1
 	// Initialise CoAP server resources
 	resource_setup(resources);
 #endif
-#else
+#endif
+#if OPENTHREAD_ENABLE_UDPCLIENT == 1
 	// Create client context
+	dtls_set_handler(the_context, &dtls_callback_client);
 #endif
 #endif
 
