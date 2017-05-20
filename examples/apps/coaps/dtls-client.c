@@ -6,11 +6,16 @@
  */
 
 #include "dtls-client.h"
+#include "openthread/udp.h"
+#include <openthread/openthread.h>
+#include "openthread/platform/alarm.h"
 
 // Disable Logging without a CLI
 #if OPENTHREAD_ENABLE_COAPS_CLI == 0
 //#define otPlatLog(...)
 #endif
+
+extern otUdpSocket mSocket;
 
 #if OPENTHREAD_ENABLE_TINYDTLS && defined(DTLS_PSK) && OPENTHREAD_ENABLE_UDPCLIENT
 /* default values */
@@ -32,8 +37,8 @@ static size_t psk_key_length = sizeof(PSK_DEFAULT_KEY) - 1;
  * retrieve a key for the given identity within this particular
  * session.
  */
-int peer_get_psk_info(struct dtls_context_t *ctx UNUSED_PARAM,
-                        const session_t *session UNUSED_PARAM,
+int get_psk_info(struct dtls_context_t *ctx,
+                        const session_t *session,
                         dtls_credentials_type_t type,
                         const unsigned char *id, size_t id_len,
                         unsigned char *result, size_t result_length)
@@ -46,7 +51,7 @@ int peer_get_psk_info(struct dtls_context_t *ctx UNUSED_PARAM,
                }
 
             if (result_length < psk_id_length) {
-                dtls_warn("cannot set psk_identity -- buffer too small\n"), type;
+                dtls_warn("cannot set psk_identity -- buffer too small\n", type);
                 return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
             }
 
@@ -68,7 +73,8 @@ int peer_get_psk_info(struct dtls_context_t *ctx UNUSED_PARAM,
             dtls_warn("unsupported request type: %d\n", type);
     }
 
+    (void) ctx;
+    (void) session;
     return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
 }
-
 #endif
