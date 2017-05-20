@@ -54,7 +54,7 @@ int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, si
 	#ifndef NDEBUG
 	char buffer[len];
 	snprintf(buffer, sizeof buffer, "%s", data);
-	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Sending data (%d Byte)", otPlatAlarmGetNow(), len, buffer);
+	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(WRITE): Sending data (%d Byte)", otPlatAlarmGetNow(), len, buffer);
 	#endif
 
 	// Sending DTLS encrypted application data over UDP
@@ -92,7 +92,7 @@ int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data,
 	#ifndef NDEBUG
 	char loggingBuffer[length];
 	snprintf(loggingBuffer, sizeof loggingBuffer, "%s", data);
-	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Received data (%d Byte)", otPlatAlarmGetNow(), length, loggingBuffer);
+	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(READ): Received data (%d Byte)", otPlatAlarmGetNow(), length, loggingBuffer);
 	#endif
 
 #if OPENTHREAD_ENABLE_YACOAP
@@ -137,7 +137,7 @@ void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMess
     session.messageInfo = *aMessageInfo;
 
     // Forward session and payload data to TinyDTLS
-    otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Receiving data", otPlatAlarmGetNow());
+    otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(onUDP): Receiving data", otPlatAlarmGetNow());
 #if OPENTHREAD_ENABLE_TINYDTLS
     dtls_handle_message(the_context, &session, payload, payloadLength);
 #endif
