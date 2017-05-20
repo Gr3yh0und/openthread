@@ -114,6 +114,13 @@ int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data,
 		}
 	}
 #endif
+#if OPENTHREAD_ENABLE_UDPCLIENT
+	coap_packet_t packet;
+	coap_parse(data, length, &packet);
+	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(COAP): Answer was: %s", otPlatAlarmGetNow(), (char *)packet.payload.p);
+	(void) context;
+	(void) session;
+#endif
 #endif
 
 	return 0;

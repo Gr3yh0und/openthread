@@ -45,6 +45,7 @@
 
 #if OPENTHREAD_ENABLE_UDPSERVER || OPENTHREAD_ENABLE_UDPCLIENT
 #include "dtls-base.h"
+#include "dtls-client.h"
 #endif
 
 // Define default Port of UDP server
@@ -164,10 +165,63 @@ int main(int argc, char *argv[])
 
 #endif
 
+
+#if OPENTHREAD_ENABLE_UDPCLIENT
+	int counter_start = 500000;
+
+	// define session
+	session_t session;
+	memset(&session, 0, sizeof(session_t));
+	session.size = sizeof(session.addr);
+
+	// define source and destination
+	otMessageInfo dest_messageInfo;
+	otIp6AddressFromString("fdde:ad00:beef:0:ea16:4584:383f:8fd8", &session.addr);
+	dest_messageInfo.mHopLimit = 8;
+	dest_messageInfo.mInterfaceId = OT_NETIF_INTERFACE_ID_THREAD;
+	dest_messageInfo.mSockPort = mSocket.mSockName.mPort;
+	dest_messageInfo.mSockAddr = mSocket.mSockName.mAddress;
+	dest_messageInfo.mPeerPort = 7777;
+	dest_messageInfo.mPeerAddr = session.addr;
+	session.messageInfo = dest_messageInfo;
+
+#if OPENTHREAD_ENABLE_YACOAP
+
+	static const coap_resource_path_t time = {1, {"time"}};
+	coap_resource_t requests[] =
+	{
+	    {COAP_RDY, COAP_METHOD_GET, COAP_TYPE_CON,
+	        NULL, &time,
+	        COAP_SET_CONTENTTYPE(COAP_CONTENTTYPE_TXT_PLAIN)}
+	};
+	coap_packet_t req;
+	uint16_t msgid = 42;
+	coap_make_request(msgid, NULL, &requests[0], NULL, 0, &req);
+	uint8_t buf[64];
+	size_t buflen = sizeof(buf);
+	coap_build(&req, buf, &buflen);
+
+#endif
+
+	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "Start");
+#endif
+
     while (1)
     {
         otTaskletsProcess(sInstance);
         PlatformProcessDrivers(sInstance);
+
+#if OPENTHREAD_ENABLE_UDPCLIENT
+        counter_start--;
+        if(counter_start == 0){
+          counter_start = 300000;
+          otPlatLog(kLogLevelDebg, kLogRegionPlatform, "New round...");
+          uint8 test = 0;
+          handle_write(the_context, &session, &test, sizeof(test));
+
+          dtls_write(the_context, &session, buf, buflen);
+        }
+#endif
     }
 
     // otInstanceFinalize(sInstance);
