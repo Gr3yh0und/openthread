@@ -10,6 +10,4 @@
 
 #include "dtls-base.h"
 
-dtls_handler_t dtls_callback_client;
-
 #endif /* EXAMPLES_APPS_COAPS_DTLS_CLIENT_H_ */

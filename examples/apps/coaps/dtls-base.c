@@ -12,104 +12,41 @@
 
 #include "dtls-base.h"
 
+#if OPENTHREAD_ENABLE_UDPSERVER
+#include "dtls-server.h"
+#endif
+
+#if OPENTHREAD_ENABLE_UDPCLIENT
+#include "dtls-client.h"
+#endif
+
 extern otInstance *mInstance;
 extern otSockAddr sockaddr;
 extern otUdpSocket mSocket;
 
-#ifdef OPENTHREAD_ENABLE_TINYDTLS
+#if OPENTHREAD_ENABLE_TINYDTLS
 extern dtls_context_t *the_context;
+#endif
+
+#if OPENTHREAD_ENABLE_YACOAP || OPENTHREAD_ENABLE_UDPSERVER
+extern coap_resource_t resources[];
 #endif
 
 // Disable Logging without a CLI
 #if OPENTHREAD_ENABLE_COAPS_CLI == 0
-#define otPlatLog(...)
+//#define otPlatLog(...)
 #endif
 
-#if defined(OPENTHREAD_ENABLE_TINYDTLS) && defined(DTLS_PSK)
-/* This function is the "key store" for tinyDTLS. It is called to
- * retrieve a key for the given identity within this particular
- * session. */
-int get_psk_info(struct dtls_context_t *ctx, const session_t *session,
-						 dtls_credentials_type_t type,
-						 const unsigned char *id, size_t id_len,
-						 unsigned char *result, size_t result_length) {
-	struct keymap_t {
-		unsigned char *id;
-		size_t id_length;
-		unsigned char *key;
-		size_t key_length;
-	} psk[3] = {
-			{ (unsigned char *)"Client_identity", 15, (unsigned char *)"secretPSK", 9 },
-			{ (unsigned char *)"default identity", 16, (unsigned char *)"\x11\x22\x33", 3 },
-			{ (unsigned char *)"\0", 2, (unsigned char *)"", 1 }
-	};
-
-	if (type != DTLS_PSK_KEY) {
-		return 0;
-	}
-
-	if (id) {
-		uint8_t i;
-		for (i = 0; i < sizeof(psk)/sizeof(struct keymap_t); i++) {
-			if (id_len == psk[i].id_length && memcmp(id, psk[i].id, id_len) == 0) {
-				if (result_length < psk[i].key_length) {
-					return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
-				}
-
-				memcpy(result, psk[i].key, psk[i].key_length);
-				return psk[i].key_length;
-			}
-		}
-	}
-	(void) session;
-	(void) ctx;
-	return dtls_alert_fatal_create(DTLS_ALERT_DECRYPT_ERROR);
-}
-#endif /* DTLS_PSK */
-
-/* Handler that is called when a raw UDP packet is receiver*/
-void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
-{
-	// Get message payload
-    uint8_t payload[DTLS_MAX_BUF];
-    uint16_t payloadLength = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
-    otMessageRead(aMessage, otMessageGetOffset(aMessage), payload, payloadLength);
-
-    // Set current session data
-    session_t session;
-    memset(&session, 0, sizeof(session_t));
-    session.size = sizeof(session.addr);
-    session.addr = aMessageInfo->mPeerAddr;
-    session.messageInfo = *aMessageInfo;
-
-    // Forward session and payload data to TinyDTLS
-    otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Receiving data", otPlatAlarmGetNow());
-#ifdef OPENTHREAD_ENABLE_TINYDTLS
-#ifdef OPENTHREAD_ENABLE_UDPSERVER
-    dtls_handle_message(the_context, &session, payload, payloadLength);
+#if OPENTHREAD_ENABLE_TINYDTLS
+/* Definition of executed handlers */
+dtls_handler_t dtls_callback = {
+  .write = handle_write,
+  .read  = handle_read,
+  .event = handle_event,
+#ifdef DTLS_PSK
+  .get_psk_info = get_psk_info,
 #endif
-#ifdef OPENTHREAD_ENABLE_UDPCLIENT
-    dtls_handle_message(the_context, &session, payload, payloadLength);
-#endif
-#endif
-
-    (void) aContext;
-}
-
-/* Sends a new OpenThread message to a given address */
-void send_message(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len)
-{
-	otMessage *message;
-
-	// Create message and write payload
-	message = otUdpNewMessage(mInstance, true);
-	otMessageSetLength(message, len);
-	otMessageWrite(message, 0, data, len);
-
-	// Send packet to peer
-	otUdpSend(&mSocket, message, &session->messageInfo);
-	(void) ctx;
-}
+};
 
 /* Handler that is called when a packet should be sent */
 int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len)
@@ -129,11 +66,18 @@ int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, si
 /* Handler that is called when an event occurs */
 int handle_event(struct dtls_context_t *ctx, session_t *session, dtls_alert_level_t level, unsigned short code)
 {
-	#ifndef NDEBUG
-	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Event occurred! (level %d, code %d )", otPlatAlarmGetNow(), level, code);
-	#endif
 
-	// Handle event here
+#ifndef NDEBUG
+  if (code == DTLS_EVENT_CONNECTED) {
+    //dtls_connected = 1;
+    otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(EVENT): Connected!", otPlatAlarmGetNow());
+  }
+  else if (code == DTLS_EVENT_CONNECT){
+    otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(EVENT): Connecting...", otPlatAlarmGetNow());
+  }else{
+    otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(EVENT): Event occurred! (level %d, code %d )", otPlatAlarmGetNow(), level, code);
+  }
+#endif
 
 	(void) ctx;
 	(void) session;
@@ -141,3 +85,78 @@ int handle_event(struct dtls_context_t *ctx, session_t *session, dtls_alert_leve
 	(void) code;
 	return 0;
 }
+
+/* Handler that is called when a packet is received */
+int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data, size_t length)
+{
+	#ifndef NDEBUG
+	char loggingBuffer[length];
+	snprintf(loggingBuffer, sizeof loggingBuffer, "%s", data);
+	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Received data (%d Byte)", otPlatAlarmGetNow(), length, loggingBuffer);
+	#endif
+
+#if OPENTHREAD_ENABLE_YACOAP
+#if OPENTHREAD_ENABLE_UDPSERVER
+	coap_packet_t requestPacket, responsePacket;
+	uint8_t responseBuffer[DTLS_MAX_BUF];
+	size_t responseBufferLength = sizeof(responseBuffer);
+
+	if ((coap_parse(data, length, &requestPacket)) < COAP_ERR)
+	{
+		// Get data from resources
+		coap_handle_request(resources, &requestPacket, &responsePacket);
+
+		// Build response packet
+		if ((coap_build(&responsePacket, responseBuffer, &responseBufferLength)) < COAP_ERR)
+		{
+			// Send response packet decrypted over DTLS
+			dtls_write(context, session, responseBuffer, responseBufferLength);
+		}
+	}
+#endif
+#endif
+
+	return 0;
+}
+#endif
+
+#if OPENTHREAD_ENABLE_UDPSERVER || OPENTHREAD_ENABLE_UDPCLIENT
+/* Handler that is called when a raw UDP packet is receiver*/
+void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
+{
+	// Get message payload
+    uint8_t payload[DTLS_MAX_BUF];
+    uint16_t payloadLength = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
+    otMessageRead(aMessage, otMessageGetOffset(aMessage), payload, payloadLength);
+
+    // Set current session data
+    session_t session;
+    memset(&session, 0, sizeof(session_t));
+    session.size = sizeof(session.addr);
+    session.addr = aMessageInfo->mPeerAddr;
+    session.messageInfo = *aMessageInfo;
+
+    // Forward session and payload data to TinyDTLS
+    otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Receiving data", otPlatAlarmGetNow());
+#if OPENTHREAD_ENABLE_TINYDTLS
+    dtls_handle_message(the_context, &session, payload, payloadLength);
+#endif
+
+    (void) aContext;
+}
+
+/* Sends a new OpenThread message to a given address */
+void send_message(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len)
+{
+	otMessage *message;
+
+	// Create message and write payload
+	message = otUdpNewMessage(mInstance, true);
+	otMessageSetLength(message, len);
+	otMessageWrite(message, 0, data, len);
+
+	// Send packet to peer
+	otUdpSend(&mSocket, message, &session->messageInfo);
+	(void) ctx;
+}
+#endif

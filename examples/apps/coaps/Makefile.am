@@ -49,6 +49,7 @@ SOURCES_COMMON                                                         = \
     main.c                                                               \
     dtls-base.c                                                          \
     dtls-server.c                                                        \
+    dtls-client.c                                                        \
     $(NULL)
 
 if OPENTHREAD_ENABLE_BUILTIN_MBEDTLS

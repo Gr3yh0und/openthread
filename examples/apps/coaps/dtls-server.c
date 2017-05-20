@@ -5,59 +5,51 @@
  *      Author: Michael Morscher, morscher@hm.edu
  */
 
-#include <stdio.h>
-#include <openthread/openthread.h>
-#include "openthread/platform/alarm.h"
-
 #include "dtls-server.h"
-
-#ifdef OPENTHREAD_ENABLE_YACOAP
-extern coap_resource_t resources[];
-#endif
 
 // Disable Logging without a CLI
 #if OPENTHREAD_ENABLE_COAPS_CLI == 0
-#define otPlatLog(...)
+//#define otPlatLog(...)
 #endif
 
-#ifdef OPENTHREAD_ENABLE_TINYDTLS
-/* Handler that is called when a packet is received */
-int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data, size_t length)
-{
-	#ifndef NDEBUG
-	char loggingBuffer[length];
-	snprintf(loggingBuffer, sizeof loggingBuffer, "%s", data);
-	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(MAIN): Received data (%d Byte)", otPlatAlarmGetNow(), length, loggingBuffer);
-	#endif
+#if OPENTHREAD_ENABLE_TINYDTLS && defined(DTLS_PSK) && OPENTHREAD_ENABLE_UDPSERVER
+/* This function is the "key store" for tinyDTLS. It is called to
+ * retrieve a key for the given identity within this particular
+ * session. */
+int get_psk_info(struct dtls_context_t *ctx, const session_t *session,
+						 dtls_credentials_type_t type,
+						 const unsigned char *id, size_t id_len,
+						 unsigned char *result, size_t result_length) {
+	struct keymap_t {
+		unsigned char *id;
+		size_t id_length;
+		unsigned char *key;
+		size_t key_length;
+	} psk[3] = {
+			{ (unsigned char *)"Client_identity", 15, (unsigned char *)"secretPSK", 9 },
+			{ (unsigned char *)"default identity", 16, (unsigned char *)"\x11\x22\x33", 3 },
+			{ (unsigned char *)"\0", 2, (unsigned char *)"", 1 }
+	};
 
-#ifdef OPENTHREAD_ENABLE_YACOAP
-	coap_packet_t requestPacket, responsePacket;
-	uint8_t responseBuffer[DTLS_MAX_BUF];
-	size_t responseBufferLength = sizeof(responseBuffer);
+	if (type != DTLS_PSK_KEY) {
+		return 0;
+	}
 
-	if ((coap_parse(data, length, &requestPacket)) < COAP_ERR)
-	{
-		// Get data from resources
-		coap_handle_request(resources, &requestPacket, &responsePacket);
+	if (id) {
+		uint8_t i;
+		for (i = 0; i < sizeof(psk)/sizeof(struct keymap_t); i++) {
+			if (id_len == psk[i].id_length && memcmp(id, psk[i].id, id_len) == 0) {
+				if (result_length < psk[i].key_length) {
+					return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+				}
 
-		// Build response packet
-		if ((coap_build(&responsePacket, responseBuffer, &responseBufferLength)) < COAP_ERR)
-		{
-			// Send response packet decrypted over DTLS
-			dtls_write(context, session, responseBuffer, responseBufferLength);
+				memcpy(result, psk[i].key, psk[i].key_length);
+				return psk[i].key_length;
+			}
 		}
 	}
-#endif
-	return 0;
+	(void) session;
+	(void) ctx;
+	return dtls_alert_fatal_create(DTLS_ALERT_DECRYPT_ERROR);
 }
-
-/* Definition of executed handlers */
-dtls_handler_t dtls_callback_server = {
-  .write = handle_write,
-  .read  = handle_read,
-  .event = handle_event,
-#ifdef DTLS_PSK
-  .get_psk_info = get_psk_info,
-#endif
-};
 #endif
