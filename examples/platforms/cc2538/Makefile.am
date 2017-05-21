@@ -45,9 +45,13 @@ libopenthread_cc2538_a_SOURCES            = \
     random.c                                \
     startup-gcc.c                           \
     uart.c                                  \
-    gpio.c                                  \
-    leds.c                                  \
     $(NULL)
+
+if OPENTHREAD_ENABLE_GPIO
+libopenthread_cc2538_a_SOURCES           += \
+    gpio.c                                  \
+    $(NULL)
+endif
 
 if OPENTHREAD_ENABLE_DIAG
 libopenthread_cc2538_a_SOURCES           += \
@@ -59,9 +63,13 @@ noinst_HEADERS                            = \
     cc2538-reg.h                            \
     platform-cc2538.h                       \
     rom-utility.h                           \
-    gpio.h                                  \
-    leds.h                                  \
     $(NULL)
+    
+if OPENTHREAD_ENABLE_GPIO
+noinst_HEADERS                           += \
+    gpio.h                                  \
+    $(NULL)
+endif
 
 Dash                                      = -
 libopenthread_cc2538_a_LIBADD             = \

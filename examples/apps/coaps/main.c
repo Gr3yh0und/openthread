@@ -40,6 +40,10 @@
 #include <openthread/platform/platform.h>
 #include <openthread/openthread.h>
 
+#if OPENTHREAD_ENABLE_GPIO
+#include "gpio.h"
+#endif
+
 #include <string.h>
 #include <stdio.h>
 
@@ -200,6 +204,11 @@ int main(int argc, char *argv[])
 	uint8_t buf[64];
 	size_t buflen = sizeof(buf);
 	coap_build(&req, buf, &buflen);
+#if OPENTHREAD_ENABLE_GPIO
+	cc2538LedsInit();
+	//LED_ALL_OFF;
+	//LED_ALL_ON;
+#endif
 
 #endif
 
@@ -216,8 +225,9 @@ int main(int argc, char *argv[])
         if(counter_start == 0){
           counter_start = 300000;
           otPlatLog(kLogLevelDebg, kLogRegionPlatform, "New round...");
-          uint8 test = 0;
-          handle_write(the_context, &session, &test, sizeof(test));
+
+          //uint8 test = 0;
+          //handle_write(the_context, &session, &test, sizeof(test));
 
           dtls_write(the_context, &session, buf, buflen);
         }

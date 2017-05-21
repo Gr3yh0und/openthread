@@ -46,6 +46,7 @@ configure_OPTIONS               = \
     --enable-ncp-app=all          \
     --enable-coaps                \
     --enable-coaps-cli            \
+    --enable-gpio                 \
     --with-ncp-bus=uart           \
     --enable-diag                 \
     --with-examples=cc2538        \

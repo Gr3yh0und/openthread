@@ -928,6 +928,36 @@ AM_CONDITIONAL([OPENTHREAD_ENABLE_COAPS_CLI], [test "${enable_coaps_cli}" = "yes
 AC_DEFINE_UNQUOTED([OPENTHREAD_ENABLE_COAPS_CLI],[${OPENTHREAD_ENABLE_COAPS_CLI}],[Define to 1 if you want to enable the command line interface on the secure CoAP server example])
 
 #
+# GPIO support for the CC2538
+#
+
+AC_ARG_ENABLE(gpio,
+    [AS_HELP_STRING([--enable-gpio],[Enable the GPIO support on the cc2538dk @<:@default=no@:>@.])],
+    [
+        case "${enableval}" in
+
+        no|yes)
+            enable_gpio=${enableval}
+            ;;
+
+        *)
+            AC_MSG_ERROR([Invalid value ${enable_gpio} for --enable_gpio])
+            ;;
+        esac
+    ],
+    [enable_gpio=no])
+
+if test "$enable_gpio" = "yes"; then
+    OPENTHREAD_ENABLE_GPIO=1
+else
+    OPENTHREAD_ENABLE_GPIO=0
+fi
+
+AC_SUBST(OPENTHREAD_ENABLE_GPIO)
+AM_CONDITIONAL([OPENTHREAD_ENABLE_GPIO], [test "${enable_gpio}" = "yes"])
+AC_DEFINE_UNQUOTED([OPENTHREAD_ENABLE_GPIO],[${OPENTHREAD_ENABLE_GPIO}],[Define to 1 if you want to enable the GPIO support on the cc2538dk])
+
+#
 # Log for certification test
 #
 

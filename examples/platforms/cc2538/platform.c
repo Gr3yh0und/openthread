@@ -33,7 +33,6 @@
  */
 
 #include "platform-cc2538.h"
-#include "leds.h"
 
 otInstance *sInstance;
 
@@ -42,8 +41,6 @@ void PlatformInit(int argc, char *argv[])
     cc2538AlarmInit();
     cc2538RandomInit();
     cc2538RadioInit();
-    cc2538LedsInit();
-
     (void)argc;
     (void)argv;
 }
