@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 
 	// define source and destination
 	otMessageInfo dest_messageInfo;
-	otIp6AddressFromString("fdde:ad00:beef:0:ea16:4584:383f:8fd8", &session.addr);
+	otIp6AddressFromString("fdde:ad00:beef:0:5122:e9d5:7ab8:c42f", &session.addr);
 	dest_messageInfo.mHopLimit = 8;
 	dest_messageInfo.mInterfaceId = OT_NETIF_INTERFACE_ID_THREAD;
 	dest_messageInfo.mSockPort = mSocket.mSockName.mPort;
@@ -204,15 +204,15 @@ int main(int argc, char *argv[])
 	uint8_t buf[64];
 	size_t buflen = sizeof(buf);
 	coap_build(&req, buf, &buflen);
+#endif
+
 #if OPENTHREAD_ENABLE_GPIO
 	cc2538LedsInit();
 	//LED_ALL_OFF;
 	//LED_ALL_ON;
 #endif
 
-#endif
-
-	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "Start");
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Start");
 #endif
 
     while (1)
@@ -224,12 +224,12 @@ int main(int argc, char *argv[])
         counter_start--;
         if(counter_start == 0){
           counter_start = 300000;
-          otPlatLog(kLogLevelDebg, kLogRegionPlatform, "New round...");
+          otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "New round...");
 
-          //uint8 test = 0;
-          //handle_write(the_context, &session, &test, sizeof(test));
-
+          // Send data
+          LED2_ON;
           dtls_write(the_context, &session, buf, buflen);
+          LED2_OFF;
         }
 #endif
     }

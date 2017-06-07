@@ -54,7 +54,7 @@ int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, si
 	#ifndef NDEBUG
 	char buffer[len];
 	snprintf(buffer, sizeof buffer, "%s", data);
-	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(WRITE): Sending data (%d Byte)", otPlatAlarmGetNow(), len, buffer);
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(WRITE): Sending data (%d Byte)", otPlatAlarmGetNow(), len, buffer);
 	#endif
 
 	// Sending DTLS encrypted application data over UDP
@@ -70,12 +70,12 @@ int handle_event(struct dtls_context_t *ctx, session_t *session, dtls_alert_leve
 #ifndef NDEBUG
   if (code == DTLS_EVENT_CONNECTED) {
     //dtls_connected = 1;
-    otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(EVENT): Connected!", otPlatAlarmGetNow());
+    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(EVENT): Connected!", otPlatAlarmGetNow());
   }
   else if (code == DTLS_EVENT_CONNECT){
-    otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(EVENT): Connecting...", otPlatAlarmGetNow());
+    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(EVENT): Connecting...", otPlatAlarmGetNow());
   }else{
-    otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(EVENT): Event occurred! (level %d, code %d )", otPlatAlarmGetNow(), level, code);
+    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(EVENT): Event occurred! (level %d, code %d )", otPlatAlarmGetNow(), level, code);
   }
 #endif
 
@@ -92,7 +92,7 @@ int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data,
 	#ifndef NDEBUG
 	char loggingBuffer[length];
 	snprintf(loggingBuffer, sizeof loggingBuffer, "%s", data);
-	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(READ): Received data (%d Byte)", otPlatAlarmGetNow(), length, loggingBuffer);
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(READ): Received data (%d Byte)", otPlatAlarmGetNow(), length, loggingBuffer);
 	#endif
 
 #if OPENTHREAD_ENABLE_YACOAP
@@ -117,7 +117,7 @@ int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data,
 #if OPENTHREAD_ENABLE_UDPCLIENT
 	coap_packet_t packet;
 	coap_parse(data, length, &packet);
-	otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(COAP): Answer was: %.*s", otPlatAlarmGetNow(), packet.payload.len, (char *)packet.payload.p);
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(COAP): Answer was: %.*s", otPlatAlarmGetNow(), packet.payload.len, (char *)packet.payload.p);
 	(void) context;
 	(void) session;
 #endif
@@ -144,7 +144,7 @@ void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMess
     session.messageInfo = *aMessageInfo;
 
     // Forward session and payload data to TinyDTLS
-    otPlatLog(kLogLevelDebg, kLogRegionPlatform, "%d(onUDP): Receiving data", otPlatAlarmGetNow());
+    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(onUDP): Receiving data", otPlatAlarmGetNow());
 #if OPENTHREAD_ENABLE_TINYDTLS
     dtls_handle_message(the_context, &session, payload, payloadLength);
 #endif
