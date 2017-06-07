@@ -335,9 +335,9 @@ fi
 #
 
 AC_SUBST(PRETTY, ["\${abs_top_srcdir}/.astyle/astyle-wrap.sh"])
-AC_SUBST(PRETTY_ARGS, ["astyle --options=\${abs_top_builddir}/.astyle/astyle-opts"])
+AC_SUBST(PRETTY_ARGS, ["astyle --options=\${abs_top_srcdir}/.astyle/astyle-opts"])
 AC_SUBST(PRETTY_CHECK, ["\${abs_top_srcdir}/.astyle/astyle-wrap.sh"])
-AC_SUBST(PRETTY_CHECK_ARGS, ["astyle --options=\${abs_top_builddir}/.astyle/astyle-opts --dry-run"])
+AC_SUBST(PRETTY_CHECK_ARGS, ["astyle --options=\${abs_top_srcdir}/.astyle/astyle-opts --dry-run"])
 
 #
 # Tests
@@ -1138,16 +1138,46 @@ AM_CONDITIONAL([OPENTHREAD_ENABLE_RAW_LINK_API], [test "${enable_raw_link_api}" 
 AC_DEFINE_UNQUOTED([OPENTHREAD_ENABLE_RAW_LINK_API],[${OPENTHREAD_ENABLE_RAW_LINK_API}],[Define to 1 if you want to enable raw link-layer API])
 
 #
+# Border Router
+#
+
+AC_ARG_ENABLE(border_router,
+    [AS_HELP_STRING([--enable-border-router],[Enable Border Router support @<:@default=no@:>@.])],
+    [
+        case "${enableval}" in
+
+        no|yes)
+            enable_border_router=${enableval}
+            ;;
+
+        *)
+            AC_MSG_ERROR([Invalid value ${enable_border_router} for --enable-border-router])
+            ;;
+        esac
+    ],
+    [enable_border_router=no])
+
+if test "$enable_border_router" = "yes"; then
+    OPENTHREAD_ENABLE_BORDER_ROUTER=1
+else
+    OPENTHREAD_ENABLE_BORDER_ROUTER=0
+fi
+
+AC_SUBST(OPENTHREAD_ENABLE_BORDER_ROUTER)
+AM_CONDITIONAL([OPENTHREAD_ENABLE_BORDER_ROUTER], [test "${enable_border_router}" = "yes"])
+AC_DEFINE_UNQUOTED([OPENTHREAD_ENABLE_BORDER_ROUTER],[${OPENTHREAD_ENABLE_BORDER_ROUTER}],[Define to 1 if you want to enable Border Router])
+
+#
 # Examples
 #
 
 AC_ARG_WITH(examples,
     [AS_HELP_STRING([--with-examples=TARGET],
-        [Specify the examples from one of: none, posix, cc2538, cc2650, da15000, efr32, nrf52840 @<:@default=none@:>@.])],
+        [Specify the examples from one of: none, posix, cc2538, cc2650, da15000, efr32, emsk, kw41z, nrf52840 @<:@default=none@:>@.])],
     [
         case "${with_examples}" in
 
-        none|posix|cc2538|cc2650|da15000|efr32|nrf52840)
+        none|posix|cc2538|cc2650|da15000|efr32|emsk|kw41z|nrf52840)
             ;;
         *)
             AC_MSG_ERROR([Invalid value ${with_examples} for --with-examples])
@@ -1185,6 +1215,16 @@ case ${with_examples} in
         AC_DEFINE_UNQUOTED([OPENTHREAD_EXAMPLES_EFR32],[${OPENTHREAD_EXAMPLES_EFR32}],[Define to 1 if you want to use efr32 examples])
         ;;
 
+     emsk)
+        OPENTHREAD_EXAMPLES_EMSK=1
+        AC_DEFINE_UNQUOTED([OPENTHREAD_EXAMPLES_EMSK],[${OPENTHREAD_EXAMPLES_EMSK}],[Define to 1 if you want to use emsk examples])
+        ;;
+
+    kw41z)
+        OPENTHREAD_EXAMPLES_KW41Z=1
+        AC_DEFINE_UNQUOTED([OPENTHREAD_EXAMPLES_KW41Z],[${OPENTHREAD_EXAMPLES_KW41Z}],[Define to 1 if you want to use kw41z examples])
+        ;;
+
     nrf52840)
         OPENTHREAD_EXAMPLES_NRF52840=1
         AC_DEFINE_UNQUOTED([OPENTHREAD_EXAMPLES_NRF52840],[${OPENTHREAD_EXAMPLES_NRF52840}],[Define to 1 if you want to use nrf52840 examples])
@@ -1213,6 +1253,12 @@ AM_CONDITIONAL([OPENTHREAD_EXAMPLES_DA15000], [test "${OPENTHREAD_EXAMPLES}" = "
 
 AC_SUBST(OPENTHREAD_EXAMPLES_EFR32)
 AM_CONDITIONAL([OPENTHREAD_EXAMPLES_EFR32], [test "${OPENTHREAD_EXAMPLES}" = "efr32"])
+
+AC_SUBST(OPENTHREAD_EXAMPLES_EMSK)
+AM_CONDITIONAL([OPENTHREAD_EXAMPLES_EMSK], [test "${OPENTHREAD_EXAMPLES}" = "emsk"])
+
+AC_SUBST(OPENTHREAD_EXAMPLES_KW41Z)
+AM_CONDITIONAL([OPENTHREAD_EXAMPLES_KW41Z], [test "${OPENTHREAD_EXAMPLES}" = "kw41z"])
 
 AC_SUBST(OPENTHREAD_EXAMPLES_NRF52840)
 AM_CONDITIONAL([OPENTHREAD_EXAMPLES_NRF52840], [test "${OPENTHREAD_EXAMPLES}" = "nrf52840"])
@@ -1380,6 +1426,8 @@ examples/platforms/cc2538/Makefile
 examples/platforms/cc2650/Makefile
 examples/platforms/da15000/Makefile
 examples/platforms/efr32/Makefile
+examples/platforms/emsk/Makefile
+examples/platforms/kw41z/Makefile
 examples/platforms/nrf52840/Makefile
 examples/platforms/posix/Makefile
 examples/platforms/utils/Makefile
@@ -1477,6 +1525,7 @@ AC_MSG_NOTICE([
   OpenThread DNS Client support             : ${enable_dns_client}
   OpenThread Application CoAP support       : ${enable_application_coap}
   OpenThread Raw Link-Layer support         : ${enable_raw_link_api}
+  OpenThread Border Router support          : ${enable_border_router}
   OpenThread examples                       : ${OPENTHREAD_EXAMPLES}
   OpenThread platform information           : ${PLATFORM_INFO}
 

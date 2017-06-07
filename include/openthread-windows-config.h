@@ -32,8 +32,8 @@
 /* Define to 1 to enable the NCP SPI interface. */
 // On the command line: #define OPENTHREAD_ENABLE_NCP_SPI  1
 
-/* Define to 1 if you want to enable default logging */
-#define OPENTHREAD_ENABLE_DEFAULT_LOGGING 1
+/* Define to 1 if you want to enable default log output. */
+#define OPENTHREAD_CONFIG_ENABLE_DEFAULT_LOG_OUTPUT 1
 
 /* Define to 1 to enable the commissioner role. */
 #define OPENTHREAD_ENABLE_COMMISSIONER 1
@@ -71,6 +71,9 @@
 #else
 #define OPENTHREAD_ENABLE_RAW_LINK_API 1
 #endif
+
+/* Define to 1 to enable Border Router feature. */
+#define OPENTHREAD_ENABLE_BORDER_ROUTER 1
 
 /* Name of package */
 #define PACKAGE "openthread"

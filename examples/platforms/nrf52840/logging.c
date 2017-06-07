@@ -45,7 +45,7 @@
 #include <openthread-config.h>
 #include <openthread/types.h>
 
-#if (OPENTHREAD_ENABLE_DEFAULT_LOGGING == 0)
+#if (OPENTHREAD_CONFIG_ENABLE_DEFAULT_LOG_OUTPUT == 0)
 #include <segger_rtt/SEGGER_RTT.h>
 
 #if (LOG_RTT_COLOR_ENABLE == 1)
@@ -76,16 +76,16 @@ static inline const char *levelToString(otLogLevel aLogLevel)
 {
     switch (aLogLevel)
     {
-    case kLogLevelCrit:
+    case OT_LOG_LEVEL_CRIT:
         return RTT_COLOR_CODE_RED;
 
-    case kLogLevelWarn:
+    case OT_LOG_LEVEL_WARN:
         return RTT_COLOR_CODE_YELLOW;
 
-    case kLogLevelInfo:
+    case OT_LOG_LEVEL_INFO:
         return RTT_COLOR_CODE_GREEN;
 
-    case kLogLevelDebg:
+    case OT_LOG_LEVEL_DEBG:
     default:
         return RTT_COLOR_CODE_DEFAULT;
     }
@@ -174,4 +174,4 @@ exit:
     return;
 }
 
-#endif // (OPENTHREAD_ENABLE_DEFAULT_LOGGING == 0)
+#endif // (OPENTHREAD_CONFIG_ENABLE_DEFAULT_LOG_OUTPUT == 0)

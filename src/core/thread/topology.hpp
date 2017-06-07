@@ -84,13 +84,21 @@ public:
     void SetState(State aState) { mState = static_cast<uint8_t>(aState); }
 
     /**
+     * Check if the neighbor/child is being restored.
+     *
+     * @returns TRUE if the neighbor is being restored, FALSE otherwise.
+     *
+     */
+    bool IsStateRestoring(void) const { return (mState == kStateRestored) || (mState == kStateChildUpdateRequest); }
+
+    /**
      * Check if the neighbor/child is in valid state or if it is being restored.
      * When in these states messages can be sent to and/or received from the neighbor/child.
      *
      * @returns TRUE if the neighbor is in valid, restored, or being restored states, FALSE otherwise.
      *
      */
-    bool IsStateValidOrRestoring(void) const { return (mState == kStateValid) || (mState == kStateRestored); }
+    bool IsStateValidOrRestoring(void) const { return (mState == kStateValid) || IsStateRestoring(); }
 
     /**
      * This method gets the device mode flags.
@@ -379,11 +387,11 @@ public:
      * @param[out] aIndex             Pointer to variable where the index of address is provided if address is found in
      *                                the list. @p aIndex can be set NULL if index is not required.
      *
-     * @retval kThreadError_None      Successfully found the address in IPv6 address list and updated @p aIndex.
-     * @retval kThreadError_NotFound  Could not find the address in the list.
+     * @retval OT_ERROR_NONE          Successfully found the address in IPv6 address list and updated @p aIndex.
+     * @retval OT_ERROR_NOT_FOUND     Could not find the address in the list.
      *
      */
-    ThreadError FindIp6Address(const Ip6::Address &aAddress, uint8_t *aIndex) const;
+    otError FindIp6Address(const Ip6::Address &aAddress, uint8_t *aIndex) const;
 
     /**
      * This method removes the address at index @p aIndex.

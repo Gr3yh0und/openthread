@@ -71,11 +71,11 @@ typedef void (*testPlatRadioSetExtendedAddress)(otInstance *, uint8_t *);
 typedef void (*testPlatRadioSetShortAddress)(otInstance *, uint16_t);
 
 typedef bool(*testPlatRadioIsEnabled)(otInstance *);
-typedef ThreadError(*testPlatRadioEnable)(otInstance *);
-typedef ThreadError(*testPlatRadioDisable)(otInstance *);
-typedef ThreadError(*testPlatRadioReceive)(otInstance *, uint8_t);
-typedef ThreadError(*testPlatRadioTransmit)(otInstance *);
-typedef RadioPacket *(*testPlatRadioGetTransmitBuffer)(otInstance *);
+typedef otError(*testPlatRadioEnable)(otInstance *);
+typedef otError(*testPlatRadioDisable)(otInstance *);
+typedef otError(*testPlatRadioReceive)(otInstance *, uint8_t);
+typedef otError(*testPlatRadioTransmit)(otInstance *);
+typedef otRadioFrame *(*testPlatRadioGetTransmitBuffer)(otInstance *);
 
 extern otRadioCaps                      g_testPlatRadioCaps;
 extern testPlatRadioSetPanId            g_testPlatRadioSetPanId;

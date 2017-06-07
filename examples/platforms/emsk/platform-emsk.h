@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016, The OpenThread Authors.
+ *  Copyright (c) 2017, The OpenThread Authors.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -28,43 +28,64 @@
 
 /**
  * @file
- *   This file includes definitions for manipulating local Thread Network Data.
+ *   This file includes the platform-specific initializers.
+ *
  */
 
-#ifndef NETWORK_DATA_LOCAL_HPP_
-#define NETWORK_DATA_LOCAL_HPP_
+#ifndef PLATFORM_EMSK_H_
+#define PLATFORM_EMSK_H_
 
-#include "thread/network_data.hpp"
+#include <stdint.h>
+#include <stdbool.h>
+#include "openthread/types.h"
 
-namespace ot {
+#include "board/board.h"
 
-class ThreadNetif;
+// Global OpenThread instance structure
+extern otInstance *sInstance;
 
-namespace NetworkData {
+/**
+ * This function initializes the alarm service used by OpenThread.
+ *
+ */
+void emskAlarmInit(void);
 
-class Local
-{
-public:
-    explicit Local(ThreadNetif &) { }
+/**
+ * This function retrieves the time remaining until the alarm fires.
+ *
+ * @param[out]  aTimeval  A pointer to timer value.
+ *
+ */
+void emskAlarmUpdateTimeout(int32_t *aTimeout);
 
-    void Clear(void) { }
+/**
+ * This function performs alarm driver processing.
+ *
+ */
+void emskAlarmProcess(otInstance *aInstance);
 
-    ThreadError AddOnMeshPrefix(const uint8_t *, uint8_t, int8_t, uint8_t, bool) { return kThreadError_NotImplemented; }
-    ThreadError RemoveOnMeshPrefix(const uint8_t *, uint8_t) { return kThreadError_NotImplemented; }
+/**
+ * This function initializes the radio service used by OpenThread.
+ *
+ */
+void emskRadioInit(void);
 
-    ThreadError AddHasRoutePrefix(const uint8_t *, uint8_t, int8_t, bool) { return kThreadError_NotImplemented; }
-    ThreadError RemoveHasRoutePrefix(const uint8_t *, uint8_t) { return kThreadError_NotImplemented; }
+/**
+ * This function performs radio driver processing.
+ *
+ */
+void emskRadioProcess(otInstance *aInstance);
 
-    ThreadError SendServerDataNotification(void) { return kThreadError_NotImplemented; }
+/**
+ * This function initializes the random number service used by OpenThread.
+ *
+ */
+void emskRandomInit(void);
 
-    void GetNetworkData(bool, uint8_t *, uint8_t &aDataLength) { aDataLength = 0; }
-    ThreadError GetNextOnMeshPrefix(otNetworkDataIterator *, otBorderRouterConfig *) { return kThreadError_NotFound; }
-    ThreadError GetNextExternalRoute(otNetworkDataIterator *, otExternalRouteConfig *) { return kThreadError_NotFound; }
-    void ClearResubmitDelayTimer(void) { }
+/**
+ * This function performs UART driver processing.
+ *
+ */
+void emskUartProcess(void);
 
-};
-
-}  // namespace NetworkData
-}  // namespace ot
-
-#endif  // NETWORK_DATA_LOCAL_HPP_
+#endif  // PLATFORM_EMSK_H_

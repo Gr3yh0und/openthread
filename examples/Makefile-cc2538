@@ -61,7 +61,6 @@ ADDON_FLAGS                    := \
     -DYACOAP_LEDS_ENABLED=1       \
     $(NULL)
 
-DEFAULT_LOGGING ?= 1
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/common-switches.mk
 
 TopSourceDir                    := $(dir $(shell readlink $(firstword $(MAKEFILE_LIST))))..

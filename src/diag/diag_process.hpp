@@ -68,12 +68,12 @@ public:
     static char *ProcessCmd(int argc, char *argv[]);
     static bool isEnabled(void);
 
-    static void DiagTransmitDone(otInstance *aInstance, bool aRxPending, ThreadError aError);
-    static void DiagReceiveDone(otInstance *aInstance, RadioPacket *aFrame, ThreadError aError);
+    static void DiagTransmitDone(otInstance *aInstance, otError aError);
+    static void DiagReceiveDone(otInstance *aInstance, otRadioFrame *aFrame, otError aError);
     static void AlarmFired(otInstance *aInstance);
 
 private:
-    static void AppendErrorResult(ThreadError error, char *aOutput, size_t aOutputMaxLen);
+    static void AppendErrorResult(otError error, char *aOutput, size_t aOutputMaxLen);
     static void ProcessSleep(int argc, char *argv[], char *aOutput, size_t aOutputMaxLen);
     static void ProcessStart(int argc, char *argv[], char *aOutput, size_t aOutputMaxLen);
     static void ProcessStop(int argc, char *argv[], char *aOutput, size_t aOutputMaxLen);
@@ -83,7 +83,7 @@ private:
     static void ProcessChannel(int argc, char *argv[], char *aOutput, size_t aOutputMaxLen);
     static void ProcessPower(int argc, char *argv[], char *aOutput, size_t aOutputMaxLen);
     static void TxPacket(void);
-    static ThreadError ParseLong(char *aString, long &aLong);
+    static otError ParseLong(char *aString, long &aLong);
 
     static char sDiagOutput[];
     static const struct Command sCommands[];
@@ -93,7 +93,7 @@ private:
     static uint8_t sTxLen;
     static uint32_t sTxPeriod;
     static uint32_t sTxPackets;
-    static RadioPacket *sTxPacket;
+    static otRadioFrame *sTxPacket;
     static otInstance *sContext;
     static bool sRepeatActive;
 };

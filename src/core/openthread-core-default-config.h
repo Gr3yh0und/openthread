@@ -422,7 +422,7 @@
  *
  */
 #ifndef OPENTHREAD_CONFIG_LOG_LEVEL
-#define OPENTHREAD_CONFIG_LOG_LEVEL                             OPENTHREAD_LOG_LEVEL_CRIT
+#define OPENTHREAD_CONFIG_LOG_LEVEL                             OT_LOG_LEVEL_CRIT
 #endif  // OPENTHREAD_CONFIG_LOG_LEVEL
 
 /**
@@ -597,6 +597,19 @@
  */
 #ifndef OPENTHREAD_CONFIG_PLAT_LOG_FUNCTION
 #define OPENTHREAD_CONFIG_PLAT_LOG_FUNCTION                     otPlatLog
+#endif
+
+/**
+ * @def OPENTHREAD_CONFIG_ENABLE_DEFAULT_LOG_OUTPUT
+ *
+ * Define to 1 to enable default log output.
+ *
+ * When enabled OpenThread provides a default implementation for `otPlatLog()` which is tied to either NCP or CLI
+ * stream writes.
+ *
+ */
+#ifndef OPENTHREAD_CONFIG_ENABLE_DEFAULT_LOG_OUTPUT
+#define OPENTHREAD_CONFIG_ENABLE_DEFAULT_LOG_OUTPUT             0
 #endif
 
 /**

@@ -41,5 +41,10 @@ otPlatResetReason otPlatGetResetReason(otInstance *aInstance)
 {
     (void)aInstance;
     // TODO: Write me!
-    return kPlatResetReason_PowerOn;
+    return OT_PLAT_RESET_REASON_POWER_ON;
+}
+
+void otPlatWakeHost(void)
+{
+    // TODO: implement an operation to wake the host from sleep state.
 }

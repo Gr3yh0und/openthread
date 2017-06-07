@@ -58,6 +58,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\core\api\commissioner_api.cpp" />
+    <ClCompile Include="..\..\src\core\api\border_router_api.cpp" />
     <ClCompile Include="..\..\src\core\api\dataset_api.cpp" />
     <ClCompile Include="..\..\src\core\api\dataset_ftd_api.cpp" />
     <ClCompile Include="..\..\src\core\api\dhcp6_api.cpp" />
@@ -217,7 +218,7 @@
     <ClInclude Include="..\..\src\core\thread\src_match_controller.hpp" />
     <ClInclude Include="..\..\src\core\thread\thread_netif.hpp" />
     <ClInclude Include="..\..\src\core\thread\thread_tlvs.hpp" />
-    <ClInclude Include="..\..\src\core\thread\thread_uris.hpp" />
+    <ClInclude Include="..\..\src\core\thread\thread_uri_paths.hpp" />
     <ClInclude Include="..\..\src\core\thread\topology.hpp" />
     <ClInclude Include="..\..\src\core\utils\child_supervision.hpp" />
     <ClInclude Include="..\..\src\core\utils\slaac_address.hpp" />
