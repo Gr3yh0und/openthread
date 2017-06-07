@@ -52,9 +52,14 @@
 #include "dtls-client.h"
 #endif
 
-// Define default Port of UDP server
-#ifndef OPENTHREAD_UDP_PORT
-#define OPENTHREAD_UDP_PORT 6666
+// Define default Port of local UDP server
+#ifndef OPENTHREAD_UDP_PORT_LOCAL
+#define OPENTHREAD_UDP_PORT_LOCAL 6666
+#endif
+
+// Define default Port of remote UDP server
+#ifndef OPENTHREAD_UDP_PORT_REMOTE
+#define OPENTHREAD_UDP_PORT_REMOTE 7777
 #endif
 
 /* UDP server and client */
@@ -146,7 +151,7 @@ int main(int argc, char *argv[])
 	memset(&mSocket, 0, sizeof(mSocket));
 	memset(&sockaddr, 0, sizeof(otSockAddr));
 	mInstance = sInstance;
-	sockaddr.mPort = OPENTHREAD_UDP_PORT;
+	sockaddr.mPort = OPENTHREAD_UDP_PORT_LOCAL;
 
 	// Bind Port
 	otUdpOpen(sInstance, &mSocket, (otUdpReceive) &onUdpPacket, &mSocket);
@@ -185,34 +190,36 @@ int main(int argc, char *argv[])
 	dest_messageInfo.mInterfaceId = OT_NETIF_INTERFACE_ID_THREAD;
 	dest_messageInfo.mSockPort = mSocket.mSockName.mPort;
 	dest_messageInfo.mSockAddr = mSocket.mSockName.mAddress;
-	dest_messageInfo.mPeerPort = 7777;
+	dest_messageInfo.mPeerPort = OPENTHREAD_UDP_PORT_REMOTE;
 	dest_messageInfo.mPeerAddr = session.addr;
 	session.messageInfo = dest_messageInfo;
 
-#if OPENTHREAD_ENABLE_YACOAP
+#ifdef OPENTHREAD_ENABLE_YACOAP
+	static coap_packet_t requestPacket;
+	static uint8 messageId = 42;
+	static uint8 buffer[32];
+	static size_t bufferLength = sizeof(buffer);
 
-	static const coap_resource_path_t time = {1, {"time"}};
-	coap_resource_t requests[] =
-	{
-	    {COAP_RDY, COAP_METHOD_GET, COAP_TYPE_CON,
-	        NULL, &time,
-	        COAP_SET_CONTENTTYPE(COAP_CONTENTTYPE_TXT_PLAIN)}
-	};
-	coap_packet_t req;
-	uint16_t msgid = 42;
-	coap_make_request(msgid, NULL, &requests[0], NULL, 0, &req);
-	uint8_t buf[64];
-	size_t buflen = sizeof(buf);
-	coap_build(&req, buf, &buflen);
+#ifdef WITH_CLIENT_PUT
+	// PUT light
+	static coap_resource_path_t resourcePath = {1, {"light"}};
+	static coap_resource_t request = {COAP_RDY, COAP_METHOD_PUT, COAP_TYPE_CON, NULL, &resourcePath, COAP_SET_CONTENTTYPE(COAP_CONTENTTYPE_TXT_PLAIN)};
+	coap_make_request(messageId, NULL, &request, &messageId, sizeof(messageId), &requestPacket);
+#else
+	// GET time
+	static coap_resource_path_t resourcePath = {1, {"time"}};
+	static coap_resource_t request = {COAP_RDY, COAP_METHOD_GET, COAP_TYPE_CON, NULL, &resourcePath, COAP_SET_CONTENTTYPE(COAP_CONTENTTYPE_TXT_PLAIN)};
+	coap_make_request(messageId, NULL, &request, NULL, 0, &requestPacket);
+#endif
+
+	coap_build(&requestPacket, buffer, &bufferLength);
 #endif
 
 #if OPENTHREAD_ENABLE_GPIO
 	cc2538LedsInit();
-	//LED_ALL_OFF;
-	//LED_ALL_ON;
 #endif
 
-	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Start");
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Client Started...");
 #endif
 
     while (1)
@@ -226,10 +233,18 @@ int main(int argc, char *argv[])
           counter_start = 300000;
           otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "New round...");
 
-          // Send data
+          // switch on LED
+#ifdef OPENTHREAD_ENABLE_GPIO
           LED2_ON;
-          dtls_write(the_context, &session, buf, buflen);
+#endif
+
+          // send data
+          dtls_write(the_context, &session, buffer, bufferLength);
+
+          // switch off LED
+#ifdef OPENTHREAD_ENABLE_GPIO
           LED2_OFF;
+#endif
         }
 #endif
     }

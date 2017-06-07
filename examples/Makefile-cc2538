@@ -59,6 +59,7 @@ ADDON_FLAGS                    := \
     -DOPENTHREAD_ENABLE_YACOAP=1  \
     -DOPENTHREAD_ENABLE_TINYDTLS=1 \
     -DYACOAP_LEDS_ENABLED=1       \
+    -DWITH_CLIENT_PUT=1 \
     $(NULL)
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/common-switches.mk
