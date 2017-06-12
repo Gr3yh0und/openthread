@@ -60,9 +60,21 @@
 #define OPENTHREAD_UDP_PORT_REMOTE 7777
 #endif
 
+// DTLS client defines
+#define DTLS_CLIENT_MESSAGE_CYCLE_TIME 1000
+#define DTLS_CLIENT_BUFFER_SIZE        32
+
 /* UDP server and client */
 #if OPENTHREAD_ENABLE_UDPSERVER || OPENTHREAD_ENABLE_UDPCLIENT
 extern void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo);
+#endif
+
+#if OPENTHREAD_ENABLE_UDPCLIENT
+	static session_t session;
+#ifdef OPENTHREAD_ENABLE_YACOAP
+	static uint8 buffer[DTLS_CLIENT_BUFFER_SIZE];
+	static size_t bufferLength = sizeof(buffer);
+#endif
 #endif
 
 /* TinyDTLS variables */
@@ -84,6 +96,16 @@ void otTaskletsSignalPending(otInstance *aInstance)
 {
     (void)aInstance;
 }
+
+#if OPENTHREAD_ENABLE_UDPCLIENT
+// Callback gets executed by timer
+void sendClientMessage(){
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, ".");
+	MEASUREMENT_DTLS_WRITE_ON;
+	dtls_write(the_context, &session, buffer, bufferLength);
+	MEASUREMENT_DTLS_WRITE_OFF;
+}
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -127,7 +149,7 @@ int main(int argc, char *argv[])
 	// Bind Port
 	otUdpOpen(sInstance, &mSocket, (otUdpReceive) &onUdpPacket, &mSocket);
 	otUdpBind(&mSocket, &sockaddr);
-	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Socket started...");
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Socket open...");
 #endif
 
 	// Initialise DTLS & CoAP
@@ -140,28 +162,26 @@ int main(int argc, char *argv[])
 	the_context = dtls_new_context(&mSocket);
 	dtls_set_handler(the_context, &dtls_callback);
 
-	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "DTLS started...");
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "DTLS initialized...");
 
-#if OPENTHREAD_ENABLE_YACOAP
+#if OPENTHREAD_ENABLE_YACOAP && OPENTHREAD_ENABLE_UDPSERVER
 	// Initialise CoAP server resources
 	resource_setup(resources);
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "CoAP resources initialised...");
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Server started...");
 #endif
 
 #endif
 
 	// Configure UDP Client
 #if OPENTHREAD_ENABLE_UDPCLIENT
-	int counter_start = 500000;
-
 	// define session
-	session_t session;
 	memset(&session, 0, sizeof(session_t));
 	session.size = sizeof(session.addr);
 
 	// define source and destination
 	otMessageInfo dest_messageInfo;
-	otIp6AddressFromString("fdde:ad00:beef:0:5122:e9d5:7ab8:c42f", &session.addr);
+	otIp6AddressFromString("fdde:ad00:beef:0:eaa5:a161:2dd9:aa41", &session.addr);
 	dest_messageInfo.mHopLimit = 8;
 	dest_messageInfo.mInterfaceId = OT_NETIF_INTERFACE_ID_THREAD;
 	dest_messageInfo.mSockPort = mSocket.mSockName.mPort;
@@ -173,8 +193,6 @@ int main(int argc, char *argv[])
 #ifdef OPENTHREAD_ENABLE_YACOAP
 	static coap_packet_t requestPacket;
 	static uint8 messageId = 42;
-	static uint8 buffer[32];
-	static size_t bufferLength = sizeof(buffer);
 
 	// Check which function the CoAP client should have
 #ifdef WITH_CLIENT_PUT
@@ -194,6 +212,8 @@ int main(int argc, char *argv[])
 	coap_build(&requestPacket, buffer, &bufferLength);
 #endif // OPENTHREAD_ENABLE_YACOAP
 
+	// Set Timer Callback function
+	otTimerSetCallback(sInstance, &sendClientMessage);
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Client started...");
 #endif
 
@@ -208,23 +228,11 @@ int main(int argc, char *argv[])
         PlatformProcessDrivers(sInstance);
 
 #if OPENTHREAD_ENABLE_UDPCLIENT
-        counter_start--;
-        if(counter_start == 0){
-			counter_start = 300000;
-			otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, ".");
-
-			// send data
-			MEASUREMENT_DTLS_WRITE_ON;
-			dtls_write(the_context, &session, buffer, bufferLength);
-			MEASUREMENT_DTLS_WRITE_OFF;
-        }
+        // Reset timer
+		if(!otTimerIsRunning(sInstance))
+        	otTimerStart(sInstance, DTLS_CLIENT_MESSAGE_CYCLE_TIME);
 #endif
     }
-
-    // otInstanceFinalize(sInstance);
-#ifdef OPENTHREAD_MULTIPLE_INSTANCE
-    // free(otInstanceBuffer);
-#endif
 
     return 0;
 }
