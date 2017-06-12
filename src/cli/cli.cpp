@@ -1688,12 +1688,12 @@ void Interpreter::ProcessPollPeriod(int argc, char *argv[])
 
     if (argc == 0)
     {
-        mServer->OutputFormat("%d\r\n", (otLinkGetPollPeriod(mInstance) / 1000));  // ms->s
+        mServer->OutputFormat("%d\r\n", (otLinkGetPollPeriod(mInstance)));  // ms->s
     }
     else
     {
         SuccessOrExit(error = ParseLong(argv[0], value));
-        otLinkSetPollPeriod(mInstance, static_cast<uint32_t>(value * 1000));  // s->ms
+        otLinkSetPollPeriod(mInstance, static_cast<uint32_t>(value));  // s->ms
     }
 
 exit:
