@@ -40,9 +40,7 @@
 #include <openthread/platform/platform.h>
 #include <openthread/openthread.h>
 
-#if OPENTHREAD_ENABLE_GPIO
-#include "gpio.h"
-#endif
+#include "measurement.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -196,11 +194,12 @@ int main(int argc, char *argv[])
 	coap_build(&requestPacket, buffer, &bufferLength);
 #endif // OPENTHREAD_ENABLE_YACOAP
 
-#if OPENTHREAD_ENABLE_GPIO
-	cc2538LedsInit();
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Client started...");
 #endif
 
+	// Check if GPIO should be enabled or not
+#if GPIO_OUTPUT_ENABLE
+	measurement_init_gpio();
 #endif
 
     while (1)
@@ -211,21 +210,13 @@ int main(int argc, char *argv[])
 #if OPENTHREAD_ENABLE_UDPCLIENT
         counter_start--;
         if(counter_start == 0){
-
-          // switch on LED
-#ifdef OPENTHREAD_ENABLE_GPIO
-          LED2_ON;
-#endif
 			counter_start = 300000;
 			otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, ".");
 
-          // send data
-          dtls_write(the_context, &session, buffer, bufferLength);
-
-          // switch off LED
-#ifdef OPENTHREAD_ENABLE_GPIO
-          LED2_OFF;
-#endif
+			// send data
+			MEASUREMENT_DTLS_WRITE_ON;
+			dtls_write(the_context, &session, buffer, bufferLength);
+			MEASUREMENT_DTLS_WRITE_OFF;
         }
 #endif
     }

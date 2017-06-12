@@ -46,10 +46,10 @@ libopenthread_cc2538_a_SOURCES            = \
     startup-gcc.c                           \
     uart.c                                  \
     $(NULL)
-
-if OPENTHREAD_ENABLE_GPIO
+    
+if GPIO_OUTPUT_ENABLE
 libopenthread_cc2538_a_SOURCES           += \
-    gpio.c                                  \
+    measurement.c                           \
     $(NULL)
 endif
 
@@ -63,14 +63,9 @@ noinst_HEADERS                            = \
     cc2538-reg.h                            \
     platform-cc2538.h                       \
     rom-utility.h                           \
+    measurement.h                           \
     $(NULL)
     
-if OPENTHREAD_ENABLE_GPIO
-noinst_HEADERS                           += \
-    gpio.h                                  \
-    $(NULL)
-endif
-
 Dash                                      = -
 libopenthread_cc2538_a_LIBADD             = \
     $(shell find $(top_builddir)/examples/platforms/utils $(Dash)type f $(Dash)name "*.o")

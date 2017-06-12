@@ -948,14 +948,14 @@ AC_ARG_ENABLE(gpio,
     [enable_gpio=no])
 
 if test "$enable_gpio" = "yes"; then
-    OPENTHREAD_ENABLE_GPIO=1
+    GPIO_OUTPUT_ENABLE=1
 else
-    OPENTHREAD_ENABLE_GPIO=0
+    GPIO_OUTPUT_ENABLE=0
 fi
 
-AC_SUBST(OPENTHREAD_ENABLE_GPIO)
-AM_CONDITIONAL([OPENTHREAD_ENABLE_GPIO], [test "${enable_gpio}" = "yes"])
-AC_DEFINE_UNQUOTED([OPENTHREAD_ENABLE_GPIO],[${OPENTHREAD_ENABLE_GPIO}],[Define to 1 if you want to enable the GPIO support on the cc2538dk])
+AC_SUBST(GPIO_OUTPUT_ENABLE)
+AM_CONDITIONAL([GPIO_OUTPUT_ENABLE], [test "${enable_gpio}" = "yes"])
+AC_DEFINE_UNQUOTED([GPIO_OUTPUT_ENABLE],[${GPIO_OUTPUT_ENABLE}],[Define to 1 if you want to enable the GPIO support on the cc2538dk])
 
 #
 # Log for certification test
