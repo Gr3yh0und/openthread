@@ -53,13 +53,14 @@ configure_OPTIONS               = \
     --with-platform-info=CC2538   \
     $(NULL)
     
-ADDON_FLAGS                    := \
-    -DOPENTHREAD_ENABLE_UDPSERVER=0 \
-    -DOPENTHREAD_ENABLE_UDPCLIENT=1 \
-    -DOPENTHREAD_ENABLE_YACOAP=1  \
-    -DOPENTHREAD_ENABLE_TINYDTLS=1 \
-    -DYACOAP_LEDS_ENABLED=0       \
-    -DWITH_CLIENT_PUT=1 \
+ADDON_FLAGS                       := \
+    -DOPENTHREAD_ENABLE_UDPSERVER=0  \
+    -DOPENTHREAD_ENABLE_UDPCLIENT=1  \
+    -DOPENTHREAD_ENABLE_YACOAP=1     \
+    -DOPENTHREAD_ENABLE_TINYDTLS=1   \
+    -DYACOAP_LEDS_ENABLED=0          \
+    -DWITH_CLIENT_PUT=1              \
+    -DTHESIS_MEASUREMENT_RF=1        \
     $(NULL)
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/common-switches.mk

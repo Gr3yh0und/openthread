@@ -41,6 +41,7 @@
 #include "platform-cc2538.h"
 #include "common/logging.hpp"
 #include "utils/code_utils.h"
+#include "measurement.h"
 
 enum
 {
@@ -106,6 +107,9 @@ static bool sIsReceiverEnabled = false;
 
 void enableReceiver(void)
 {
+	// Measure RX
+	MEASUREMENT_RX_ON;
+
     if (!sIsReceiverEnabled)
     {
         otLogInfoPlat(sInstance, "Enabling receiver", NULL);
@@ -140,6 +144,9 @@ void disableReceiver(void)
 
         sIsReceiverEnabled = false;
     }
+
+    // Measure RX
+    MEASUREMENT_RX_OFF;
 }
 
 void setChannel(uint8_t aChannel)
@@ -234,6 +241,8 @@ void otPlatRadioSetShortAddress(otInstance *aInstance, uint16_t aAddress)
 
 void cc2538RadioInit(void)
 {
+	// Measure init function
+	MEASUREMENT_INIT_ON;
     sTransmitFrame.mLength = 0;
     sTransmitFrame.mPsdu = sTransmitPsdu;
     sReceiveFrame.mLength = 0;
@@ -261,6 +270,8 @@ void cc2538RadioInit(void)
     sTxPower = sTxPowerTable[0].mTxPowerVal;
 
     otLogInfoPlat(sInstance, "Initialized", NULL);
+    // Measure init function
+    MEASUREMENT_INIT_OFF;
 }
 
 bool otPlatRadioIsEnabled(otInstance *aInstance)
@@ -309,6 +320,8 @@ otError otPlatRadioSleep(otInstance *aInstance)
 
 otError otPlatRadioReceive(otInstance *aInstance, uint8_t aChannel)
 {
+	// Measure receiving function
+	MEASUREMENT_RECEIVING_ON;
     otError error = OT_ERROR_INVALID_STATE;
     (void)aInstance;
 
@@ -323,11 +336,16 @@ otError otPlatRadioReceive(otInstance *aInstance, uint8_t aChannel)
         enableReceiver();
     }
 
+    // Measure receiving function
+    MEASUREMENT_RECEIVING_OFF;
     return error;
 }
 
 otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
 {
+	// Measure transmit function
+	MEASUREMENT_TRANSMIT_ON;
+
     otError error = OT_ERROR_INVALID_STATE;
     (void)aInstance;
 
@@ -362,19 +380,26 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
         // wait for valid rssi
         while ((HWREG(RFCORE_XREG_RSSISTAT) & RFCORE_XREG_RSSISTAT_RSSI_VALID) == 0);
 
+        // Measure CCA
+        MEASUREMENT_CCA_ON;
         otEXPECT_ACTION(((HWREG(RFCORE_XREG_FSMSTAT1) & RFCORE_XREG_FSMSTAT1_CCA) &&
                          !((HWREG(RFCORE_XREG_FSMSTAT1) & RFCORE_XREG_FSMSTAT1_SFD))),
                         sTransmitError = OT_ERROR_CHANNEL_ACCESS_FAILURE);
+        MEASUREMENT_CCA_OFF;
 
         // begin transmit
+        MEASUREMENT_TX_ON;
         HWREG(RFCORE_SFR_RFST) = RFCORE_SFR_RFST_INSTR_TXON;
 
         while (HWREG(RFCORE_XREG_FSMSTAT1) & RFCORE_XREG_FSMSTAT1_TX_ACTIVE);
+        MEASUREMENT_TX_OFF;
 
         otLogDebgPlat(sInstance, "Transmitted %d bytes", aFrame->mLength);
     }
 
 exit:
+	// Measure transmit function
+	MEASUREMENT_TRANSMIT_OFF;
     return error;
 }
 
@@ -420,6 +445,9 @@ void otPlatRadioSetPromiscuous(otInstance *aInstance, bool aEnable)
 
 void readFrame(void)
 {
+	// Measure read function
+	MEASUREMENT_READ_ON;
+
     uint8_t length;
     uint8_t crcCorr;
     int i;
@@ -463,6 +491,8 @@ void readFrame(void)
     }
 
 exit:
+	// Measure read function
+    MEASUREMENT_READ_OFF;
     return;
 }
 
