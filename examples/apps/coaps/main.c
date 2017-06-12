@@ -82,18 +82,6 @@ extern void resource_setup(const coap_resource_t *resources);
 extern coap_resource_t resources[];
 #endif
 
-#ifdef OPENTHREAD_MULTIPLE_INSTANCE
-void *otPlatCAlloc(size_t aNum, size_t aSize)
-{
-    return calloc(aNum, aSize);
-}
-
-void otPlatFree(void *aPtr)
-{
-    free(aPtr);
-}
-#endif
-
 void otTaskletsSignalPending(otInstance *aInstance)
 {
     (void)aInstance;
@@ -101,44 +89,28 @@ void otTaskletsSignalPending(otInstance *aInstance)
 
 int main(int argc, char *argv[])
 {
+	// Create OpenThread instance
     otInstance *sInstance;
-
-#ifdef OPENTHREAD_MULTIPLE_INSTANCE
-    size_t otInstanceBufferLength = 0;
-    uint8_t *otInstanceBuffer = NULL;
-#endif
-
     PlatformInit(argc, argv);
-
-#ifdef OPENTHREAD_MULTIPLE_INSTANCE
-    // Call to query the buffer size
-    (void)otInstanceInit(NULL, &otInstanceBufferLength);
-
-    // Call to allocate the buffer
-    otInstanceBuffer = (uint8_t *)malloc(otInstanceBufferLength);
-    assert(otInstanceBuffer);
-
-    // Initialise OpenThread with the buffer
-    sInstance = otInstanceInit(otInstanceBuffer, &otInstanceBufferLength);
-#else
     sInstance = otInstanceInit();
-#endif
     assert(sInstance);
 
+    // Check if command line interface should be enabled
 #if OPENTHREAD_ENABLE_COAPS_CLI
     otCliUartInit(sInstance);
 #endif
 
+    // Check if diagnostics interface should be enabled
 #if OPENTHREAD_ENABLE_DIAG
     otDiagInit(sInstance);
 #endif
 
-    // Enable basic Thread config, ToDo: REMOVE THIS
+    // Enable basic hard coded Thread configuration
 	otLinkSetPanId(sInstance, 0x1234);
 	otIp6SetEnabled(sInstance, true);
 	otThreadSetEnabled(sInstance, true);
 
-	// Add specific IP address, ToDo: REMOVE THIS
+	// Add specific IP address for testing
 	otNetifAddress aAddress;
 	otIp6AddressFromString("fdde:ad00:beef:0:5d12:76b8:948e:5b42", &aAddress.mAddress);
 	aAddress.mPrefixLength = 64;
@@ -146,6 +118,7 @@ int main(int argc, char *argv[])
 	aAddress.mValid = true;
 	otIp6AddUnicastAddress(sInstance, &aAddress);
 
+	// Initialise UDP
 #if OPENTHREAD_ENABLE_UDPSERVER || OPENTHREAD_ENABLE_UDPCLIENT
 	// Create variables
 	memset(&mSocket, 0, sizeof(mSocket));
@@ -156,8 +129,10 @@ int main(int argc, char *argv[])
 	// Bind Port
 	otUdpOpen(sInstance, &mSocket, (otUdpReceive) &onUdpPacket, &mSocket);
 	otUdpBind(&mSocket, &sockaddr);
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Socket started...");
 #endif
 
+	// Initialise DTLS & CoAP
 #if OPENTHREAD_ENABLE_TINYDTLS
 	// Initialise DTLS basics and setting log level
 	dtls_init();
@@ -167,14 +142,17 @@ int main(int argc, char *argv[])
 	the_context = dtls_new_context(&mSocket);
 	dtls_set_handler(the_context, &dtls_callback);
 
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "DTLS started...");
+
 #if OPENTHREAD_ENABLE_YACOAP
 	// Initialise CoAP server resources
 	resource_setup(resources);
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "CoAP resources initialised...");
 #endif
 
 #endif
 
-
+	// Configure UDP Client
 #if OPENTHREAD_ENABLE_UDPCLIENT
 	int counter_start = 500000;
 
@@ -200,26 +178,29 @@ int main(int argc, char *argv[])
 	static uint8 buffer[32];
 	static size_t bufferLength = sizeof(buffer);
 
+	// Check which function the CoAP client should have
 #ifdef WITH_CLIENT_PUT
 	// PUT light
 	static coap_resource_path_t resourcePath = {1, {"light"}};
 	static coap_resource_t request = {COAP_RDY, COAP_METHOD_PUT, COAP_TYPE_CON, NULL, &resourcePath, COAP_SET_CONTENTTYPE(COAP_CONTENTTYPE_TXT_PLAIN)};
 	coap_make_request(messageId, NULL, &request, &messageId, sizeof(messageId), &requestPacket);
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Client mode = PUT");
 #else
 	// GET time
 	static coap_resource_path_t resourcePath = {1, {"time"}};
 	static coap_resource_t request = {COAP_RDY, COAP_METHOD_GET, COAP_TYPE_CON, NULL, &resourcePath, COAP_SET_CONTENTTYPE(COAP_CONTENTTYPE_TXT_PLAIN)};
 	coap_make_request(messageId, NULL, &request, NULL, 0, &requestPacket);
-#endif
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Client mode = GET");
+#endif // WITH_CLIENT_PUT
 
 	coap_build(&requestPacket, buffer, &bufferLength);
-#endif
+#endif // OPENTHREAD_ENABLE_YACOAP
 
 #if OPENTHREAD_ENABLE_GPIO
 	cc2538LedsInit();
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Client started...");
 #endif
 
-	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Client Started...");
 #endif
 
     while (1)
@@ -230,13 +211,13 @@ int main(int argc, char *argv[])
 #if OPENTHREAD_ENABLE_UDPCLIENT
         counter_start--;
         if(counter_start == 0){
-          counter_start = 300000;
-          otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "New round...");
 
           // switch on LED
 #ifdef OPENTHREAD_ENABLE_GPIO
           LED2_ON;
 #endif
+			counter_start = 300000;
+			otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, ".");
 
           // send data
           dtls_write(the_context, &session, buffer, bufferLength);
