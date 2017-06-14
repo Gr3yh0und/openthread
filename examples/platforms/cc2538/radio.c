@@ -241,8 +241,6 @@ void otPlatRadioSetShortAddress(otInstance *aInstance, uint16_t aAddress)
 
 void cc2538RadioInit(void)
 {
-	// Measure init function
-	MEASUREMENT_INIT_ON;
     sTransmitFrame.mLength = 0;
     sTransmitFrame.mPsdu = sTransmitPsdu;
     sReceiveFrame.mLength = 0;
@@ -270,8 +268,6 @@ void cc2538RadioInit(void)
     sTxPower = sTxPowerTable[0].mTxPowerVal;
 
     otLogInfoPlat(sInstance, "Initialized", NULL);
-    // Measure init function
-    MEASUREMENT_INIT_OFF;
 }
 
 bool otPlatRadioIsEnabled(otInstance *aInstance)
@@ -320,14 +316,13 @@ otError otPlatRadioSleep(otInstance *aInstance)
 
 otError otPlatRadioReceive(otInstance *aInstance, uint8_t aChannel)
 {
-	// Measure receiving function
-	MEASUREMENT_RECEIVING_ON;
     otError error = OT_ERROR_INVALID_STATE;
     (void)aInstance;
 
     if (sState != OT_RADIO_STATE_DISABLED)
     {
         otLogDebgPlat(sInstance, "State=OT_RADIO_STATE_RECEIVE", NULL);
+        MEASUREMENT_RECEIVING_ON;
 
         error = OT_ERROR_NONE;
         sState = OT_RADIO_STATE_RECEIVE;
@@ -388,11 +383,13 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
         MEASUREMENT_CCA_OFF;
 
         // begin transmit
+        MEASUREMENT_RX_OFF;
         MEASUREMENT_TX_ON;
         HWREG(RFCORE_SFR_RFST) = RFCORE_SFR_RFST_INSTR_TXON;
 
         while (HWREG(RFCORE_XREG_FSMSTAT1) & RFCORE_XREG_FSMSTAT1_TX_ACTIVE);
         MEASUREMENT_TX_OFF;
+        MEASUREMENT_RX_ON;
 
         otLogDebgPlat(sInstance, "Transmitted %d bytes", aFrame->mLength);
     }
@@ -445,16 +442,13 @@ void otPlatRadioSetPromiscuous(otInstance *aInstance, bool aEnable)
 
 void readFrame(void)
 {
-	// Measure read function
-	MEASUREMENT_READ_ON;
-
     uint8_t length;
     uint8_t crcCorr;
     int i;
 
     otEXPECT(sState == OT_RADIO_STATE_RECEIVE || sState == OT_RADIO_STATE_TRANSMIT);
     otEXPECT((HWREG(RFCORE_XREG_FSMSTAT1) & RFCORE_XREG_FSMSTAT1_FIFOP) != 0);
-
+    MEASUREMENT_READ_ON;
     // read length
     length = HWREG(RFCORE_SFR_RFDATA);
     otEXPECT(IEEE802154_MIN_LENGTH <= length && length <= IEEE802154_MAX_LENGTH);
@@ -491,14 +485,14 @@ void readFrame(void)
     }
 
 exit:
-	// Measure read function
-    MEASUREMENT_READ_OFF;
+
     return;
 }
 
 void cc2538RadioProcess(otInstance *aInstance)
 {
     readFrame();
+    MEASUREMENT_READ_OFF;
 
     if ((sState == OT_RADIO_STATE_RECEIVE && sReceiveFrame.mLength > 0) ||
         (sState == OT_RADIO_STATE_TRANSMIT && sReceiveFrame.mLength > IEEE802154_ACK_LENGTH))

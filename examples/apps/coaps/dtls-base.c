@@ -11,6 +11,7 @@
 #include "openthread/platform/alarm.h"
 
 #include "dtls-base.h"
+#include "measurement.h"
 
 #if OPENTHREAD_ENABLE_UDPSERVER
 #include "dtls-server.h"
@@ -51,6 +52,7 @@ dtls_handler_t dtls_callback = {
 /* Handler that is called when a packet should be sent */
 int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len)
 {
+	MEASUREMENT_DTLS_WRITE_PACKET_ON;
 	#ifndef NDEBUG
 	char buffer[len];
 	snprintf(buffer, sizeof buffer, "%s", data);
@@ -59,6 +61,7 @@ int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, si
 
 	// Sending DTLS encrypted application data over UDP
 	send_message(ctx, session, data, len);
+	MEASUREMENT_DTLS_WRITE_PACKET_OFF;
 
 	return len;
 }
@@ -115,6 +118,7 @@ int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data,
 	}
 #endif
 #if OPENTHREAD_ENABLE_UDPCLIENT
+	MEASUREMENT_DTLS_TOTAL_OFF;
 	coap_packet_t packet;
 	coap_parse(data, length, &packet);
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(COAP): Answer was: %.*s", otPlatAlarmGetNow(), packet.payload.len, (char *)packet.payload.p);
@@ -131,6 +135,7 @@ int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data,
 /* Handler that is called when a raw UDP packet is receiver*/
 void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
+	MEASUREMENT_DTLS_READ_ON;
 	// Get message payload
     uint8_t payload[DTLS_MAX_BUF];
     uint16_t payloadLength = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
@@ -148,6 +153,7 @@ void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMess
 #if OPENTHREAD_ENABLE_TINYDTLS
     dtls_handle_message(the_context, &session, payload, payloadLength);
 #endif
+    MEASUREMENT_DTLS_READ_OFF;
 
     (void) aContext;
 }

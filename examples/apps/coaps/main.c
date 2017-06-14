@@ -101,6 +101,7 @@ void otTaskletsSignalPending(otInstance *aInstance)
 // Callback gets executed by timer
 void sendClientMessage(){
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, ".");
+	MEASUREMENT_DTLS_TOTAL_ON;
 	MEASUREMENT_DTLS_WRITE_ON;
 	dtls_write(the_context, &session, buffer, bufferLength);
 	MEASUREMENT_DTLS_WRITE_OFF;
