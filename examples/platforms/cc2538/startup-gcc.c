@@ -142,7 +142,7 @@ void IntDefaultHandler(void)
 #define FLASH_CCA_BOOTLDR_CFG_PORT_A_PIN_S      24         ///< Selected pin on pad A shift
 #define FLASH_CCA_IMAGE_VALID                   0x00000000 ///< Indicates valid image in flash
 
-#define FLASH_CCA_CONF_BOOTLDR_BACKDOOR_PORT_A_PIN  3      ///< Select Button on SmartRF06 Eval Board
+#define FLASH_CCA_CONF_BOOTLDR_BACKDOOR_PORT_A_PIN  6      ///< Select Button on SmartRF06 Eval Board
 
 typedef struct
 {
