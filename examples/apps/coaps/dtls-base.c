@@ -52,7 +52,6 @@ dtls_handler_t dtls_callback = {
 /* Handler that is called when a packet should be sent */
 int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len)
 {
-	MEASUREMENT_DTLS_WRITE_PACKET_ON;
 	#ifndef NDEBUG
 	char buffer[len];
 	snprintf(buffer, sizeof buffer, "%s", data);
@@ -61,7 +60,6 @@ int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, si
 
 	// Sending DTLS encrypted application data over UDP
 	send_message(ctx, session, data, len);
-	MEASUREMENT_DTLS_WRITE_PACKET_OFF;
 
 	return len;
 }
