@@ -199,13 +199,13 @@ int main(int argc, char *argv[])
 	// Check which function the CoAP client should have
 #ifdef WITH_CLIENT_PUT
 	// PUT light
-	static coap_resource_path_t resourcePath = {1, {"light"}};
+	static coap_resource_path_t resourcePath = {1, {"status"}};
 	static coap_resource_t request = {COAP_RDY, COAP_METHOD_PUT, COAP_TYPE_CON, NULL, &resourcePath, COAP_SET_CONTENTTYPE(COAP_CONTENTTYPE_TXT_PLAIN)};
 	coap_make_request(messageId, NULL, &request, &messageId, sizeof(messageId), &requestPacket);
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Client mode = PUT");
 #else
 	// GET time
-	static coap_resource_path_t resourcePath = {1, {"time"}};
+	static coap_resource_path_t resourcePath = {1, {"status"}};
 	static coap_resource_t request = {COAP_RDY, COAP_METHOD_GET, COAP_TYPE_CON, NULL, &resourcePath, COAP_SET_CONTENTTYPE(COAP_CONTENTTYPE_TXT_PLAIN)};
 	coap_make_request(messageId, NULL, &request, NULL, 0, &requestPacket);
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Client mode = GET");
