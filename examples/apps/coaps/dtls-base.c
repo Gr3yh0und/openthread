@@ -45,9 +45,9 @@ int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, si
 #endif
 
 	// Sending DTLS encrypted application data over UDP
-	send_packet(session, data, len);
-
-	return len;
+    send_packet(session, data, len);
+    (void) ctx;
+    return len;
 }
 
 /* Handler that is called when an event occurs */
@@ -163,6 +163,9 @@ void send_packet(session_t *session, uint8 *data, size_t len)
 }
 
 void handle_message(session_t *session, uint8 *message, int messageLength){
+#if DEBUG
+    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(handle_message): Received request...", otPlatAlarmGetNow());
+#endif
 	coap_packet_t requestPacket, responsePacket;
 	uint8_t responseBuffer[DTLS_MAX_BUF];
 	size_t responseBufferLength = sizeof(responseBuffer);
