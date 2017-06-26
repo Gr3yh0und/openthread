@@ -7,12 +7,7 @@
 
 #include "dtls-server.h"
 
-// Disable Logging without a CLI
-#if OPENTHREAD_ENABLE_COAPS_CLI == 0
-//#define otPlatLog(...)
-#endif
-
-#if OPENTHREAD_ENABLE_TINYDTLS && defined(DTLS_PSK) && OPENTHREAD_ENABLE_UDPSERVER
+#if WITH_TINYDTLS && defined(DTLS_PSK) && WITH_SERVER
 /* This function is the "key store" for tinyDTLS. It is called to
  * retrieve a key for the given identity within this particular
  * session. */

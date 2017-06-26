@@ -53,14 +53,15 @@ configure_OPTIONS               = \
     $(NULL)
     
 ADDON_FLAGS                       := \
-    -DOPENTHREAD_ENABLE_UDPSERVER=0  \
-    -DOPENTHREAD_ENABLE_UDPCLIENT=1  \
-    -DOPENTHREAD_ENABLE_YACOAP=1     \
-    -DOPENTHREAD_ENABLE_TINYDTLS=1   \
-    -DYACOAP_LEDS_ENABLED=0          \
+    -DWITH_TINYDTLS=1                \
+    -DWITH_YACOAP=1                  \
+    -DWITH_SERVER=0                  \
     -DWITH_CLIENT=1                  \
     -DWITH_CLIENT_PUT=1              \
     -DGPIO_OUTPUT_ENABLE=1           \
+    -DGPIO_OUTPUT_ENABLE_LEDS=1      \
+    -DYACOAP_LEDS_ENABLED=0          \
+    -DDEBUG=1                        \
     $(NULL)
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/common-switches.mk

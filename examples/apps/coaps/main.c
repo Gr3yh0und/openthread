@@ -29,6 +29,8 @@
 #include <openthread/config.h>
 
 #include <assert.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "openthread/udp.h"
 #include <openthread/cli.h>
@@ -38,44 +40,12 @@
 
 #include "measurement.h"
 
-#include <string.h>
-#include <stdio.h>
-
-#if OPENTHREAD_ENABLE_UDPSERVER || OPENTHREAD_ENABLE_UDPCLIENT
+#if WITH_SERVER || WITH_CLIENT
 #include "dtls-base.h"
-#include "dtls-client.h"
-#endif
-
-// Define default Port of local UDP server
-#ifndef OPENTHREAD_UDP_PORT_LOCAL
-#define OPENTHREAD_UDP_PORT_LOCAL 6666
-#endif
-
-// Define default Port of remote UDP server
-#ifndef OPENTHREAD_UDP_PORT_REMOTE
-#define OPENTHREAD_UDP_PORT_REMOTE 7777
-#endif
-
-// DTLS client defines
-#define DTLS_CLIENT_MESSAGE_CYCLE_TIME 1000
-#define DTLS_CLIENT_BUFFER_SIZE        32
-
-/* UDP server and client */
-#if OPENTHREAD_ENABLE_UDPSERVER || OPENTHREAD_ENABLE_UDPCLIENT
-extern void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo);
-#endif
-
-#if OPENTHREAD_ENABLE_UDPCLIENT
-	static session_t session;
-#ifdef OPENTHREAD_ENABLE_YACOAP
-	static uint8 buffer[DTLS_CLIENT_BUFFER_SIZE];
-	static size_t bufferLength = sizeof(buffer);
-#endif
 #endif
 
 /* TinyDTLS variables */
-#if OPENTHREAD_ENABLE_TINYDTLS
-#define DTLS_LOG_LEVEL DTLS_LOG_WARN
+#if WITH_TINYDTLS
 otInstance *mInstance;
 otSockAddr sockaddr;
 otUdpSocket mSocket;
@@ -83,26 +53,31 @@ dtls_context_t *the_context = NULL;
 #endif
 
 /* YaCoAP variables */
-#if OPENTHREAD_ENABLE_YACOAP
+#if WITH_YACOAP
 extern void resource_setup(const coap_resource_t *resources);
 extern coap_resource_t resources[];
+#endif
+
+/* UDP client thread */
+#if WITH_CLIENT
+	static session_t session;
+	static uint8 buffer[DTLS_CLIENT_BUFFER_SIZE];
+	static size_t bufferLength = sizeof(buffer);
+
+	// Callback gets executed by timer
+	void sendClientMessage(){
+		otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, ".");
+		MEASUREMENT_DTLS_TOTAL_ON;
+		MEASUREMENT_DTLS_WRITE_ON;
+		dtls_write(the_context, &session, buffer, bufferLength);
+		MEASUREMENT_DTLS_WRITE_OFF;
+	}
 #endif
 
 void otTaskletsSignalPending(otInstance *aInstance)
 {
     (void)aInstance;
 }
-
-#if OPENTHREAD_ENABLE_UDPCLIENT
-// Callback gets executed by timer
-void sendClientMessage(){
-	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, ".");
-	MEASUREMENT_DTLS_TOTAL_ON;
-	MEASUREMENT_DTLS_WRITE_ON;
-	dtls_write(the_context, &session, buffer, bufferLength);
-	MEASUREMENT_DTLS_WRITE_OFF;
-}
-#endif
 
 int main(int argc, char *argv[])
 {
@@ -115,11 +90,6 @@ int main(int argc, char *argv[])
     // Check if command line interface should be enabled
 #if OPENTHREAD_ENABLE_COAPS_CLI
     otCliUartInit(sInstance);
-#endif
-
-    // Check if diagnostics interface should be enabled
-#if OPENTHREAD_ENABLE_DIAG
-    otDiagInit(sInstance);
 #endif
 
     // Enable basic hard coded Thread configuration
@@ -137,8 +107,7 @@ int main(int argc, char *argv[])
 	otIp6AddUnicastAddress(sInstance, &aAddress);
 
 	// Initialise UDP
-#if OPENTHREAD_ENABLE_UDPSERVER || OPENTHREAD_ENABLE_UDPCLIENT
-	// Create variables
+#if WITH_SERVER || WITH_CLIENT
 	memset(&mSocket, 0, sizeof(mSocket));
 	memset(&sockaddr, 0, sizeof(otSockAddr));
 	mInstance = sInstance;
@@ -147,11 +116,13 @@ int main(int argc, char *argv[])
 	// Bind Port
 	otUdpOpen(sInstance, &mSocket, (otUdpReceive) &onUdpPacket, &mSocket);
 	otUdpBind(&mSocket, &sockaddr);
+#if DEBUG
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Socket open...");
 #endif
+#endif
 
-	// Initialise DTLS & CoAP
-#if OPENTHREAD_ENABLE_TINYDTLS
+	// Initialise DTLS
+#if WITH_TINYDTLS
 	// Initialise DTLS basics and setting log level
 	dtls_init();
 	dtls_set_log_level(DTLS_LOG_LEVEL);
@@ -160,26 +131,30 @@ int main(int argc, char *argv[])
 	the_context = dtls_new_context(&mSocket);
 	dtls_set_handler(the_context, &dtls_callback);
 
+#if DEBUG
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "DTLS initialized...");
+#endif
+#endif
 
-#if OPENTHREAD_ENABLE_YACOAP && OPENTHREAD_ENABLE_UDPSERVER
+	// Initialise CoAP
+#if WITH_YACOAP && WITH_SERVER
 	// Initialise CoAP server resources
 	resource_setup(resources);
+#if DEBUG
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "CoAP resources initialised...");
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Server started...");
 #endif
-
 #endif
 
 	// Configure UDP Client
-#if OPENTHREAD_ENABLE_UDPCLIENT
+#if WITH_CLIENT
 	// define session
 	memset(&session, 0, sizeof(session_t));
 	session.size = sizeof(session.addr);
 
 	// define source and destination
 	otMessageInfo dest_messageInfo;
-	otIp6AddressFromString("fdde:ad00:beef:0:eaa5:a161:2dd9:aa41", &session.addr);
+	otIp6AddressFromString("fdde:ad00:beef:0:713b:7f3b:cffc:83c8", &session.addr);
 	dest_messageInfo.mHopLimit = 8;
 	dest_messageInfo.mInterfaceId = OT_NETIF_INTERFACE_ID_THREAD;
 	dest_messageInfo.mSockPort = mSocket.mSockName.mPort;
@@ -188,32 +163,38 @@ int main(int argc, char *argv[])
 	dest_messageInfo.mPeerAddr = session.addr;
 	session.messageInfo = dest_messageInfo;
 
-#ifdef OPENTHREAD_ENABLE_YACOAP
+#ifdef WITH_YACOAP
 	static coap_packet_t requestPacket;
 	static uint8 messageId = 42;
 
 	// Check which function the CoAP client should have
 #ifdef WITH_CLIENT_PUT
-	// PUT light
+	// PUT status
 	static coap_resource_path_t resourcePath = {1, {"status"}};
 	static coap_resource_t request = {COAP_RDY, COAP_METHOD_PUT, COAP_TYPE_CON, NULL, &resourcePath, COAP_SET_CONTENTTYPE(COAP_CONTENTTYPE_TXT_PLAIN)};
 	coap_make_request(messageId, NULL, &request, &messageId, sizeof(messageId), &requestPacket);
+#if DEBUG
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Client mode = PUT");
+#endif
 #else
-	// GET time
+	// GET status
 	static coap_resource_path_t resourcePath = {1, {"status"}};
 	static coap_resource_t request = {COAP_RDY, COAP_METHOD_GET, COAP_TYPE_CON, NULL, &resourcePath, COAP_SET_CONTENTTYPE(COAP_CONTENTTYPE_TXT_PLAIN)};
 	coap_make_request(messageId, NULL, &request, NULL, 0, &requestPacket);
+#if DEBUG
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Client mode = GET");
+#endif
 #endif // WITH_CLIENT_PUT
 
 	coap_build(&requestPacket, buffer, &bufferLength);
-#endif // OPENTHREAD_ENABLE_YACOAP
+#endif // WITH_YACOAP
 
 	// Set Timer Callback function
 	otTimerSetCallback(sInstance, &sendClientMessage);
+#if DEBUG
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Client started...");
 #endif
+#endif // WITH_CLIENT
 
 	// Check if GPIO should be enabled or not
 #if GPIO_OUTPUT_ENABLE
@@ -225,7 +206,7 @@ int main(int argc, char *argv[])
         otTaskletsProcess(sInstance);
         PlatformProcessDrivers(sInstance);
 
-#if OPENTHREAD_ENABLE_UDPCLIENT
+#if WITH_CLIENT
         // Reset timer
 		if(!otTimerIsRunning(sInstance))
         	otTimerStart(sInstance, DTLS_CLIENT_MESSAGE_CYCLE_TIME);

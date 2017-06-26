@@ -11,34 +11,20 @@
 #include "openthread/platform/alarm.h"
 
 #include "dtls-base.h"
-#include "measurement.h"
-
-#if OPENTHREAD_ENABLE_UDPSERVER
-#include "dtls-server.h"
-#endif
-
-#if OPENTHREAD_ENABLE_UDPCLIENT
-#include "dtls-client.h"
-#endif
 
 extern otInstance *mInstance;
 extern otSockAddr sockaddr;
 extern otUdpSocket mSocket;
 
-#if OPENTHREAD_ENABLE_TINYDTLS
+#if WITH_TINYDTLS
 extern dtls_context_t *the_context;
 #endif
 
-#if OPENTHREAD_ENABLE_YACOAP || OPENTHREAD_ENABLE_UDPSERVER
+#if WITH_YACOAP || WITH_SERVER
 extern coap_resource_t resources[];
 #endif
 
-// Disable Logging without a CLI
-#if OPENTHREAD_ENABLE_COAPS_CLI == 0
-//#define otPlatLog(...)
-#endif
-
-#if OPENTHREAD_ENABLE_TINYDTLS
+#if WITH_TINYDTLS
 /* Definition of executed handlers */
 dtls_handler_t dtls_callback = {
   .write = handle_write,
@@ -52,11 +38,11 @@ dtls_handler_t dtls_callback = {
 /* Handler that is called when a packet should be sent */
 int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len)
 {
-	#ifndef NDEBUG
+#if DEBUG
 	char buffer[len];
 	snprintf(buffer, sizeof buffer, "%s", data);
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(WRITE): Sending data (%d Byte)", otPlatAlarmGetNow(), len, buffer);
-	#endif
+#endif
 
 	// Sending DTLS encrypted application data over UDP
 	send_message(ctx, session, data, len);
@@ -68,12 +54,10 @@ int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, si
 int handle_event(struct dtls_context_t *ctx, session_t *session, dtls_alert_level_t level, unsigned short code)
 {
 
-#ifndef NDEBUG
+#if DEBUG
   if (code == DTLS_EVENT_CONNECTED) {
-    //dtls_connected = 1;
     otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(EVENT): Connected!", otPlatAlarmGetNow());
-  }
-  else if (code == DTLS_EVENT_CONNECT){
+  }else if (code == DTLS_EVENT_CONNECT){
     otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(EVENT): Connecting...", otPlatAlarmGetNow());
   }else{
     otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(EVENT): Event occurred! (level %d, code %d )", otPlatAlarmGetNow(), level, code);
@@ -90,14 +74,14 @@ int handle_event(struct dtls_context_t *ctx, session_t *session, dtls_alert_leve
 /* Handler that is called when a packet is received */
 int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data, size_t length)
 {
-	#ifndef NDEBUG
+#if DEBUG
 	char loggingBuffer[length];
 	snprintf(loggingBuffer, sizeof loggingBuffer, "%s", data);
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(READ): Received data (%d Byte)", otPlatAlarmGetNow(), length, loggingBuffer);
-	#endif
+#endif
 
-#if OPENTHREAD_ENABLE_YACOAP
-#if OPENTHREAD_ENABLE_UDPSERVER
+#if WITH_YACOAP
+#if WITH_SERVER
 	coap_packet_t requestPacket, responsePacket;
 	uint8_t responseBuffer[DTLS_MAX_BUF];
 	size_t responseBufferLength = sizeof(responseBuffer);
@@ -115,11 +99,13 @@ int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data,
 		}
 	}
 #endif
-#if OPENTHREAD_ENABLE_UDPCLIENT
+#if WITH_CLIENT
 	MEASUREMENT_DTLS_TOTAL_OFF;
 	coap_packet_t packet;
 	coap_parse(data, length, &packet);
+#if DEBUG
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(COAP): Answer was: %.*s", otPlatAlarmGetNow(), packet.payload.len, (char *)packet.payload.p);
+#endif
 	(void) context;
 	(void) session;
 #endif
@@ -129,7 +115,7 @@ int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data,
 }
 #endif
 
-#if OPENTHREAD_ENABLE_UDPSERVER || OPENTHREAD_ENABLE_UDPCLIENT
+#if WITH_SERVER || WITH_CLIENT
 /* Handler that is called when a raw UDP packet is receiver*/
 void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
@@ -146,13 +132,15 @@ void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMess
     session.addr = aMessageInfo->mPeerAddr;
     session.messageInfo = *aMessageInfo;
 
-    // Forward session and payload data to TinyDTLS
+#if DEBUG
     otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(onUDP): Receiving data", otPlatAlarmGetNow());
-#if OPENTHREAD_ENABLE_TINYDTLS
+#endif
+
+    // Forward session and payload data to TinyDTLS
+#if WITH_TINYDTLS
     dtls_handle_message(the_context, &session, payload, payloadLength);
 #endif
     MEASUREMENT_DTLS_READ_OFF;
-
     (void) aContext;
 }
 

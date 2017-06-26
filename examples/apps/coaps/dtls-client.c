@@ -10,14 +10,7 @@
 #include <openthread/openthread.h>
 #include "openthread/platform/alarm.h"
 
-// Disable Logging without a CLI
-#if OPENTHREAD_ENABLE_COAPS_CLI == 0
-//#define otPlatLog(...)
-#endif
-
-extern otUdpSocket mSocket;
-
-#if OPENTHREAD_ENABLE_TINYDTLS && defined(DTLS_PSK) && OPENTHREAD_ENABLE_UDPCLIENT
+#if WITH_TINYDTLS && defined(DTLS_PSK) && WITH_CLIENT
 /* default values */
 #define PSK_DEFAULT_IDENTITY "Client_identity"
 #define PSK_DEFAULT_KEY      "secretPSK"

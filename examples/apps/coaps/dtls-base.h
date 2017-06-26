@@ -11,6 +11,30 @@
 #include "../third_party/yacoap/coap.h"
 #include "../third_party/tinydtls/dtls.h"
 #include "../third_party/tinydtls/dtls_debug.h"
+#include "measurement.h"
+
+#if WITH_SERVER
+#include "dtls-server.h"
+#endif
+
+#if WITH_CLIENT
+#include "dtls-client.h"
+#endif
+
+// Define default Port of local UDP server
+#ifndef OPENTHREAD_UDP_PORT_LOCAL
+#define OPENTHREAD_UDP_PORT_LOCAL 6666
+#endif
+
+// Define default Port of remote UDP server
+#ifndef OPENTHREAD_UDP_PORT_REMOTE
+#define OPENTHREAD_UDP_PORT_REMOTE 7777
+#endif
+
+// DTLS client defines
+#define DTLS_CLIENT_MESSAGE_CYCLE_TIME 1000
+#define DTLS_CLIENT_BUFFER_SIZE        32
+#define DTLS_LOG_LEVEL                 DTLS_LOG_WARN
 
 extern dtls_context_t *the_context;
 dtls_handler_t dtls_callback;
