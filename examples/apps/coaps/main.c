@@ -42,13 +42,13 @@
 
 #if WITH_SERVER || WITH_CLIENT
 #include "dtls-base.h"
+otInstance *mInstance;
+otSockAddr sockaddr;
+otUdpSocket mSocket;
 #endif
 
 /* TinyDTLS variables */
 #if WITH_TINYDTLS
-otInstance *mInstance;
-otSockAddr sockaddr;
-otUdpSocket mSocket;
 dtls_context_t *the_context = NULL;
 #endif
 
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
 	sockaddr.mPort = OPENTHREAD_UDP_PORT_LOCAL;
 
 	// Bind Port
-	otUdpOpen(sInstance, &mSocket, (otUdpReceive) &onUdpPacket, &mSocket);
+	otUdpOpen(sInstance, &mSocket, (otUdpReceive) &read_packet, &mSocket);
 	otUdpBind(&mSocket, &sockaddr);
 #if DEBUG
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Socket open...");

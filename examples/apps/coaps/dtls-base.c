@@ -45,7 +45,7 @@ int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, si
 #endif
 
 	// Sending DTLS encrypted application data over UDP
-	send_message(ctx, session, data, len);
+	send_packet(session, data, len);
 
 	return len;
 }
@@ -117,7 +117,7 @@ int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data,
 
 #if WITH_SERVER || WITH_CLIENT
 /* Handler that is called when a raw UDP packet is receiver*/
-void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
+void read_packet(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
 	MEASUREMENT_DTLS_READ_ON;
 	// Get message payload
@@ -136,16 +136,20 @@ void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMess
     otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(onUDP): Receiving data", otPlatAlarmGetNow());
 #endif
 
-    // Forward session and payload data to TinyDTLS
+    // Forward session and payload data
 #if WITH_TINYDTLS
+    // Secure
     dtls_handle_message(the_context, &session, payload, payloadLength);
+#else
+    // Unsecure
+    handle_message(&session, payload, payloadLength);
 #endif
     MEASUREMENT_DTLS_READ_OFF;
     (void) aContext;
 }
 
 /* Sends a new OpenThread message to a given address */
-void send_message(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len)
+void send_packet(session_t *session, uint8 *data, size_t len)
 {
 	otMessage *message;
 
@@ -156,6 +160,24 @@ void send_message(struct dtls_context_t *ctx, session_t *session, uint8 *data, s
 
 	// Send packet to peer
 	otUdpSend(&mSocket, message, &session->messageInfo);
-	(void) ctx;
+}
+
+void handle_message(session_t *session, uint8 *message, int messageLength){
+	coap_packet_t requestPacket, responsePacket;
+	uint8_t responseBuffer[DTLS_MAX_BUF];
+	size_t responseBufferLength = sizeof(responseBuffer);
+
+	if ((coap_parse(message, messageLength, &requestPacket)) < COAP_ERR)
+	{
+		// Get data from resources
+		coap_handle_request(resources, &requestPacket, &responsePacket);
+
+		// Build response packet
+		if ((coap_build(&responsePacket, responseBuffer, &responseBufferLength)) < COAP_ERR)
+		{
+			// Send response packet
+			send_packet(session, responseBuffer, responseBufferLength);
+		}
+	}
 }
 #endif

@@ -39,8 +39,9 @@
 extern dtls_context_t *the_context;
 dtls_handler_t dtls_callback;
 
-void onUdpPacket(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo);
-void send_message(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len);
+void read_packet(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo);
+void send_packet(session_t *session, uint8 *data, size_t len);
+void handle_message(session_t *session, uint8 *message, int messageLength);
 int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len);
 int handle_event(struct dtls_context_t *ctx, session_t *session, dtls_alert_level_t level, unsigned short code);
 int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data, size_t length);
