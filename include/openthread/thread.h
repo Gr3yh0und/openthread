@@ -112,7 +112,7 @@ OTAPI bool OTCALL otThreadIsSingleton(otInstance *aInstance);
  * @retval OT_ERROR_BUSY  Already performing an Thread Discovery.
  *
  */
-OTAPI otError OTCALL otThreadDiscover(otInstance *aInstance, uint32_t aScanChannels, uint16_t aPanid, bool aJoiner,
+OTAPI otError OTCALL otThreadDiscover(otInstance *aInstance, uint32_t aScanChannels, uint16_t aPanId, bool aJoiner,
                                       bool aEnableEui64Filtering, otHandleActiveScanResult aCallback,
                                       void *aCallbackContext);
 
@@ -532,6 +532,16 @@ OTAPI otError OTCALL otThreadSendDiagnosticGet(otInstance *aInstance, const otIp
  */
 OTAPI otError OTCALL otThreadSendDiagnosticReset(otInstance *aInstance, const otIp6Address *aDestination,
                                                  const uint8_t aTlvTypes[], uint8_t aCount);
+
+/**
+ * Get the IPv6 counters.
+ *
+ * @param[in]  aInstance  A pointer to an OpenThread instance.
+ *
+ * @returns A pointer to the IPv6 counters.
+ *
+ */
+OTAPI const otIpCounters *OTCALL otThreadGetIp6Counters(otInstance *aInstance);
 
 /**
  * @}

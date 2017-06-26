@@ -35,11 +35,7 @@
 #ifndef PLATFORM_POSIX_H_
 #define PLATFORM_POSIX_H_
 
-#ifdef OPENTHREAD_CONFIG_FILE
-#include OPENTHREAD_CONFIG_FILE
-#else
-#include <openthread-config.h>
-#endif
+#include <openthread/config.h>
 
 #include <assert.h>
 #include <stdlib.h>
@@ -122,6 +118,12 @@ void platformAlarmProcess(otInstance *aInstance);
  *
  */
 void platformRadioInit(void);
+
+/**
+ * This function deinitializes the radio service used by OpenThread.
+ *
+ */
+void platformRadioDeinit(void);
 
 /**
  * This function updates the file descriptor sets with file descriptors used by the radio driver.

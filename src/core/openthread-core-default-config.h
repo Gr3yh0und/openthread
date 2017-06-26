@@ -150,6 +150,22 @@
 #endif // OPENTHREAD_CONFIG_MAX_TX_ATTEMPTS_INDIRECT_POLLS
 
 /**
+ * @def OPENTHREAD_CONFIG_DROP_MESSAGE_ON_FRAGMENT_TX_FAILURE
+ *
+ * Define as 1 for OpenThread to drop a message (and not send any remaining fragments of the message) if all transmit
+ * attempts fail for a fragment of the message. For a direct transmission, a failure occurs after all MAC transmission
+ * attempts for a given fragment are unsuccessful. For an indirect transmission, a failure occurs after all data poll
+ * triggered transmission attempts for a given fragment fail.
+ *
+ * If set to zero (disabled), OpenThread will attempt to send subsequent fragments, whether or not all transmission
+ * attempts fail for a given fragment.
+ *
+ */
+#ifndef OPENTHREAD_CONFIG_DROP_MESSAGE_ON_FRAGMENT_TX_FAILURE
+#define OPENTHREAD_CONFIG_DROP_MESSAGE_ON_FRAGMENT_TX_FAILURE   1
+#endif // OPENTHREAD_CONFIG_DROP_MESSAGE_ON_FRAGMENT_TX_FAILURE
+
+/**
  * @def OPENTHREAD_CONFIG_ATTACH_DATA_POLL_PERIOD
  *
  * The Data Poll period during attach in milliseconds.
@@ -739,6 +755,16 @@
 #endif
 
 /**
+ * @def OPENTHREAD_CONFIG_ENABLE_BEACON_RSP_IF_JOINABLE
+ *
+ * Define to 1 if you want to enable beacon response for joinable networks.
+ *
+ */
+#ifndef OPENTHREAD_CONFIG_ENABLE_BEACON_RSP_IF_JOINABLE
+#define OPENTHREAD_CONFIG_ENABLE_BEACON_RSP_IF_JOINABLE         0
+#endif
+
+/**
  * @def OPENTHREAD_CONFIG_MBEDTLS_HEAP_SIZE
  *
  * The size of mbedTLS heap buffer when DTLS is enabled.
@@ -810,7 +836,19 @@
  *
  */
 #ifndef OPENTHREAD_CONFIG_SUPERVISION_MSG_NO_ACK_REQUEST
-#define OPENTHREAD_CONFIG_SUPERVISION_MSG_NO_ACK_REQUEST       0
+#define OPENTHREAD_CONFIG_SUPERVISION_MSG_NO_ACK_REQUEST        0
+#endif
+
+/**
+ * @def OPENTHREAD_CONFIG_NCP_ENABLE_PEEK_POKE
+ *
+ * Define as 1 to enable peek/poke functionality on NCP.
+ *
+ * Peek/Poke allows the host to read/write to memory addresses on NCP. This is intended for debugging.
+ *
+ */
+#ifndef OPENTHREAD_CONFIG_NCP_ENABLE_PEEK_POKE
+#define OPENTHREAD_CONFIG_NCP_ENABLE_PEEK_POKE                  0
 #endif
 
 #endif  // OPENTHREAD_CORE_DEFAULT_CONFIG_H_

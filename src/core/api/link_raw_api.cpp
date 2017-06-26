@@ -31,12 +31,13 @@
  *   This file implements the OpenThread Link Raw API.
  */
 
+#include <openthread/config.h>
+#include <common/debug.hpp>
+#include <common/logging.hpp>
 #include <openthread/platform/random.h>
 #include <openthread/platform/usec-alarm.h>
 
 #include "openthread-instance.h"
-#include "common/debug.hpp"
-#include "common/logging.hpp"
 
 #if OPENTHREAD_ENABLE_RAW_LINK_API
 
@@ -553,7 +554,7 @@ void LinkRaw::StartCsmaBackoff(void)
     }
 
     backoff = (otPlatRandomGet() % (1UL << backoffExponent));
-    backoff *= (Mac::kUnitBackoffPeriod * OT_RADIO_SYMBOL_TIME);
+    backoff *= (static_cast<uint32_t>(Mac::kUnitBackoffPeriod) * OT_RADIO_SYMBOL_TIME);
 
 #if OPENTHREAD_CONFIG_ENABLE_PLATFORM_USEC_BACKOFF_TIMER
     otPlatUsecAlarmTime now;

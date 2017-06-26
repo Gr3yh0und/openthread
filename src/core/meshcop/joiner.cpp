@@ -33,11 +33,7 @@
 
 #define WPP_NAME "joiner.tmh"
 
-#ifdef OPENTHREAD_CONFIG_FILE
-#include OPENTHREAD_CONFIG_FILE
-#else
-#include <openthread-config.h>
-#endif
+#include <openthread/config.h>
 
 #include "joiner.hpp"
 
@@ -450,6 +446,13 @@ void Joiner::HandleJoinerEntrust(Coap::Header &aHeader, Message &aMessage, const
     mTimer.Start(kConfigExtAddressDelay);
 
 exit:
+
+    if (error != OT_ERROR_NONE)
+    {
+        otLogWarnMeshCoP(GetInstance(), "Error while processing joiner entrust: %s",
+                         otThreadErrorToString(error));
+    }
+
     otLogFuncExit();
 }
 

@@ -34,11 +34,7 @@
 
 #define WPP_NAME "mle_router.tmh"
 
-#ifdef OPENTHREAD_CONFIG_FILE
-#include OPENTHREAD_CONFIG_FILE
-#else
-#include <openthread-config.h>
-#endif
+#include <openthread/config.h>
 
 #include "mle_router.hpp"
 
@@ -81,7 +77,8 @@ MleRouter::MleRouter(ThreadNetif &aThreadNetif):
     mIsRouterRestoringChildren(false),
     mPreviousPartitionId(0),
     mRouterSelectionJitter(kRouterSelectionJitter),
-    mRouterSelectionJitterTimeout(0)
+    mRouterSelectionJitterTimeout(0),
+    mParentPriority(kParentPriorityUnspecified)
 {
     mDeviceMode |= ModeTlv::kModeFFD | ModeTlv::kModeFullNetworkData;
 
@@ -419,7 +416,7 @@ otError MleRouter::SetStateRouter(uint16_t aRloc16)
 {
     if (mRole != OT_DEVICE_ROLE_ROUTER)
     {
-        mNetif.SetStateChangedFlags(OT_NET_ROLE);
+        mNetif.SetStateChangedFlags(OT_CHANGED_THREAD_ROLE);
     }
 
     SetRloc16(aRloc16);
@@ -454,7 +451,7 @@ otError MleRouter::SetStateLeader(uint16_t aRloc16)
 {
     if (mRole != OT_DEVICE_ROLE_LEADER)
     {
-        mNetif.SetStateChangedFlags(OT_NET_ROLE);
+        mNetif.SetStateChangedFlags(OT_CHANGED_THREAD_ROLE);
     }
 
     SetRloc16(aRloc16);
@@ -677,7 +674,7 @@ otError MleRouter::HandleLinkRequest(const Message &aMessage, const Ip6::Message
 
     // Version
     SuccessOrExit(error = Tlv::GetTlv(aMessage, Tlv::kVersion, sizeof(version), version));
-    VerifyOrExit(version.IsValid() && version.GetVersion() == kVersion, error = OT_ERROR_PARSE);
+    VerifyOrExit(version.IsValid() && version.GetVersion() >= kVersion, error = OT_ERROR_PARSE);
 
     // Leader Data
     if (Tlv::GetTlv(aMessage, Tlv::kLeaderData, sizeof(leaderData), leaderData) == OT_ERROR_NONE)
@@ -1670,7 +1667,7 @@ otError MleRouter::HandleParentRequest(const Message &aMessage, const Ip6::Messa
 
     // Version
     SuccessOrExit(error = Tlv::GetTlv(aMessage, Tlv::kVersion, sizeof(version), version));
-    VerifyOrExit(version.IsValid() && version.GetVersion() == kVersion, error = OT_ERROR_PARSE);
+    VerifyOrExit(version.IsValid() && version.GetVersion() >= kVersion, error = OT_ERROR_PARSE);
 
     // Scan Mask
     SuccessOrExit(error = Tlv::GetTlv(aMessage, Tlv::kScanMask, sizeof(scanMask), scanMask));
@@ -2570,23 +2567,9 @@ otError MleRouter::HandleDiscoveryRequest(const Message &aMessage, const Ip6::Me
     // only Routers and REEDs respond
     VerifyOrExit((mDeviceMode & ModeTlv::kModeFFD) != 0, error = OT_ERROR_INVALID_STATE);
 
-    offset = aMessage.GetOffset();
-    end = aMessage.GetLength();
-
     // find MLE Discovery TLV
-    while (offset < end)
-    {
-        aMessage.Read(offset, sizeof(tlv), &tlv);
-
-        if (tlv.GetType() == Tlv::kDiscovery)
-        {
-            break;
-        }
-
-        offset += sizeof(tlv) + tlv.GetLength();
-    }
-
-    VerifyOrExit(offset < end, error = OT_ERROR_PARSE);
+    VerifyOrExit(Tlv::GetOffset(aMessage, Tlv::kDiscovery, offset) == OT_ERROR_NONE, error = OT_ERROR_PARSE);
+    aMessage.Read(offset, sizeof(tlv), &tlv);
 
     offset += sizeof(tlv);
     end = offset + sizeof(tlv) + tlv.GetLength();
@@ -3117,7 +3100,7 @@ otError MleRouter::RemoveNeighbor(Neighbor &aNeighbor)
         {
             aNeighbor.SetState(Neighbor::kStateInvalid);
             mNetif.GetMeshForwarder().UpdateIndirectMessages();
-            mNetif.SetStateChangedFlags(OT_THREAD_CHILD_REMOVED);
+            mNetif.SetStateChangedFlags(OT_CHANGED_THREAD_CHILD_REMOVED);
             mNetif.GetNetworkDataLeader().SendServerDataNotification(aNeighbor.GetRloc16());
             RemoveStoredChild(aNeighbor.GetRloc16());
         }
@@ -4230,23 +4213,33 @@ void MleRouter::FillConnectivityTlv(ConnectivityTlv &aTlv)
     uint8_t cost;
     uint8_t linkQuality;
     uint8_t numChildren = 0;
+    int8_t parentPriority = kParentPriorityMedium;
 
-    for (int i = 0; i < mMaxChildrenAllowed; i++)
+    if (mParentPriority != kParentPriorityUnspecified)
     {
-        if (mChildren[i].GetState() == Neighbor::kStateValid)
-        {
-            numChildren++;
-        }
-    }
-
-    if ((mMaxChildrenAllowed - numChildren) < (mMaxChildrenAllowed / 3))
-    {
-        tlv.SetParentPriority(-1);
+        parentPriority = mParentPriority;
     }
     else
     {
-        tlv.SetParentPriority(0);
+        for (int i = 0; i < mMaxChildrenAllowed; i++)
+        {
+            if (mChildren[i].GetState() == Neighbor::kStateValid)
+            {
+                numChildren++;
+            }
+        }
+
+        if ((mMaxChildrenAllowed - numChildren) < (mMaxChildrenAllowed / 3))
+        {
+            parentPriority = kParentPriorityLow;
+        }
+        else
+        {
+            parentPriority = kParentPriorityMedium;
+        }
     }
+
+    tlv.SetParentPriority(parentPriority);
 
     // compute leader cost and link qualities
     tlv.SetLinkQuality1(0);
@@ -4579,7 +4572,7 @@ void MleRouter::SetChildStateToValid(Child *aChild)
     VerifyOrExit(aChild->GetState() != Neighbor::kStateValid);
 
     aChild->SetState(Neighbor::kStateValid);
-    mNetif.SetStateChangedFlags(OT_THREAD_CHILD_ADDED);
+    mNetif.SetStateChangedFlags(OT_CHANGED_THREAD_CHILD_ADDED);
     StoreChild(aChild->GetRloc16());
 
 exit:
@@ -4610,7 +4603,7 @@ void MleRouter::RemoveChildren(void)
         switch (mChildren[i].GetState())
         {
         case Neighbor::kStateValid:
-            mNetif.SetStateChangedFlags(OT_THREAD_CHILD_REMOVED);
+            mNetif.SetStateChangedFlags(OT_CHANGED_THREAD_CHILD_REMOVED);
 
         // Fall-through to next case
 
@@ -4674,6 +4667,24 @@ uint8_t MleRouter::GetMinDowngradeNeighborRouters(void)
     }
 
     return routerCount;
+}
+
+int8_t MleRouter::GetAssignParentPriority(void) const
+{
+    return mParentPriority;
+}
+
+otError MleRouter::SetAssignParentPriority(int8_t aParentPriority)
+{
+    otError error = OT_ERROR_NONE;
+
+    VerifyOrExit(aParentPriority <= kParentPriorityHigh &&
+                 aParentPriority >= kParentPriorityUnspecified, error = OT_ERROR_INVALID_ARGS);
+
+    mParentPriority = aParentPriority;
+
+exit:
+    return error;
 }
 
 }  // namespace Mle

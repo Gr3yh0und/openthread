@@ -31,11 +31,7 @@
  *   This file implements the CLI interpreter.
  */
 
-#ifdef OPENTHREAD_CONFIG_FILE
-#include OPENTHREAD_CONFIG_FILE
-#else
-#include <openthread-config.h>
-#endif
+#include <openthread/config.h>
 
 #include "cli_dataset.hpp"
 
@@ -371,11 +367,10 @@ exit:
 otError Dataset::ProcessMasterKey(otInstance *aInstance, int argc, char *argv[])
 {
     otError error = OT_ERROR_NONE;
-    int keyLength;
     uint8_t key[OT_MASTER_KEY_SIZE];
 
     VerifyOrExit(argc > 0, error = OT_ERROR_PARSE);
-    VerifyOrExit((keyLength = Interpreter::Hex2Bin(argv[0], key, sizeof(key))) == OT_MASTER_KEY_SIZE,
+    VerifyOrExit((Interpreter::Hex2Bin(argv[0], key, sizeof(key))) == OT_MASTER_KEY_SIZE,
                  error = OT_ERROR_PARSE);
 
     memcpy(sDataset.mMasterKey.m8, key, sizeof(sDataset.mMasterKey));

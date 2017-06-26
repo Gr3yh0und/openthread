@@ -33,6 +33,8 @@
 
 #define WPP_NAME "ip6_api.tmh"
 
+#include <openthread/config.h>
+
 #include <openthread/ip6.h>
 
 #include "openthread-instance.h"
@@ -160,8 +162,8 @@ otError otIp6Send(otInstance *aInstance, otMessage *aMessage)
 
     otLogFuncEntry();
 
-    error = aInstance->mIp6.HandleDatagram(*static_cast<Message *>(aMessage), NULL,
-                                           aInstance->mThreadNetif.GetInterfaceId(), NULL, true);
+    error = aInstance->mIp6.SendRaw(*static_cast<Message *>(aMessage),
+                                    aInstance->mThreadNetif.GetInterfaceId());
 
     otLogFuncExitErr(error);
 
