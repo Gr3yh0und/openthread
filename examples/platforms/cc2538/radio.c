@@ -375,7 +375,7 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
         // wait for valid rssi
         while ((HWREG(RFCORE_XREG_RSSISTAT) & RFCORE_XREG_RSSISTAT_RSSI_VALID) == 0);
 
-        // Measure CCA
+        MEASUREMENT_RX_OFF;
         MEASUREMENT_CCA_ON;
         otEXPECT_ACTION(((HWREG(RFCORE_XREG_FSMSTAT1) & RFCORE_XREG_FSMSTAT1_CCA) &&
                          !((HWREG(RFCORE_XREG_FSMSTAT1) & RFCORE_XREG_FSMSTAT1_SFD))),
@@ -383,7 +383,6 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
         MEASUREMENT_CCA_OFF;
 
         // begin transmit
-        MEASUREMENT_RX_OFF;
         MEASUREMENT_TX_ON;
         HWREG(RFCORE_SFR_RFST) = RFCORE_SFR_RFST_INSTR_TXON;
 

@@ -120,6 +120,9 @@ int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data,
 void read_packet(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
 	MEASUREMENT_DTLS_READ_ON;
+#if WITH_SERVER
+	MEASUREMENT_DTLS_TOTAL_ON;
+#endif
 	// Get message payload
     uint8_t payload[DTLS_MAX_BUF];
     uint16_t payloadLength = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
@@ -136,6 +139,8 @@ void read_packet(void *aContext, otMessage *aMessage, const otMessageInfo *aMess
     otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(onUDP): Receiving data", otPlatAlarmGetNow());
 #endif
 
+    MEASUREMENT_DTLS_READ_OFF;
+
     // Forward session and payload data
 #if WITH_TINYDTLS
     // Secure
@@ -144,13 +149,19 @@ void read_packet(void *aContext, otMessage *aMessage, const otMessageInfo *aMess
     // Unsecure
     handle_message(&session, payload, payloadLength);
 #endif
-    MEASUREMENT_DTLS_READ_OFF;
+#if WITH_SERVER
+	MEASUREMENT_DTLS_TOTAL_OFF;
+#endif
+
     (void) aContext;
 }
 
 /* Sends a new OpenThread message to a given address */
 void send_packet(session_t *session, uint8 *data, size_t len)
 {
+#ifdef WITH_SERVER
+	MEASUREMENT_DTLS_WRITE_ON;
+#endif
 	otMessage *message;
 
 	// Create message and write payload
@@ -160,6 +171,9 @@ void send_packet(session_t *session, uint8 *data, size_t len)
 
 	// Send packet to peer
 	otUdpSend(&mSocket, message, &session->messageInfo);
+#ifdef WITH_SERVER
+	MEASUREMENT_DTLS_WRITE_OFF;
+#endif
 }
 
 void handle_message(session_t *session, uint8 *message, int messageLength){
