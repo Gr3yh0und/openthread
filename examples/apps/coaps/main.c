@@ -93,10 +93,11 @@ int main(int argc, char *argv[])
 #endif
 
     // Enable basic hard coded Thread configuration
-	otLinkSetPanId(sInstance, 0x1234);
-	otIp6SetEnabled(sInstance, true);
-	otThreadSetEnabled(sInstance, true);
-	otLinkSetPollPeriod(sInstance, 300);
+    otLinkSetMaxTransmitPower(sInstance, 7);
+    otLinkSetPanId(sInstance, 0x1234);
+    otIp6SetEnabled(sInstance, true);
+    otThreadSetEnabled(sInstance, true);
+    otLinkSetPollPeriod(sInstance, 300);
 
 	// Add specific IP address for testing
 	otNetifAddress aAddress;
