@@ -95,7 +95,9 @@ int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data,
 		if ((coap_build(&responsePacket, responseBuffer, &responseBufferLength)) < COAP_ERR)
 		{
 			// Send response packet decrypted over DTLS
+			MEASUREMENT_DTLS_WRITE_ON;
 			dtls_write(context, session, responseBuffer, responseBufferLength);
+			MEASUREMENT_DTLS_WRITE_OFF;
 		}
 	}
 #endif
@@ -180,10 +182,12 @@ void handle_message(session_t *session, uint8 *message, int messageLength){
 #if DEBUG
     otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(handle_message): Received request...", otPlatAlarmGetNow());
 #endif
+#ifdef WITH_YACOAP
 	coap_packet_t requestPacket, responsePacket;
 	uint8_t responseBuffer[DTLS_MAX_BUF];
 	size_t responseBufferLength = sizeof(responseBuffer);
 
+	// Parse received packet for CoAP request
 	if ((coap_parse(message, messageLength, &requestPacket)) < COAP_ERR)
 	{
 		// Get data from resources
@@ -196,5 +200,6 @@ void handle_message(session_t *session, uint8 *message, int messageLength){
 			send_packet(session, responseBuffer, responseBufferLength);
 		}
 	}
+#endif
 }
 #endif
