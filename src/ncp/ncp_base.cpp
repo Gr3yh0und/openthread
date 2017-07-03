@@ -79,14 +79,6 @@ namespace ot {
 #define NCP_CHANGED_THREAD_ON_MESH_NETS       (1U << 30)
 #define NCP_CHANGED_THREAD_OFF_MESH_ROUTES    (1U << 29)
 
-enum
-{
-    kThreadMode_RxOnWhenIdle        = (1 << 3),
-    kThreadMode_SecureDataRequest   = (1 << 2),
-    kThreadMode_FullFunctionDevice  = (1 << 1),
-    kThreadMode_FullNetworkData     = (1 << 0),
-};
-
 #define RSSI_OVERRIDE_DISABLED        127 // Used for PROP_MAC_WHITELIST
 
 #define IGNORE_RETURN_VALUE(s)        do { if (s){} } while (0)
@@ -571,6 +563,33 @@ static uint8_t BorderRouterConfigToFlagByte(const otBorderRouterConfig &aConfig)
     }
 
     flags |= (aConfig.mPreference << SPINEL_NET_FLAG_PREFERENCE_OFFSET);
+
+    return flags;
+}
+
+static uint8_t LinkFlagsToFlagByte(bool aRxOnWhenIdle, bool aSecureDataRequests, bool aDeviceType, bool aNetworkData)
+{
+    uint8_t flags(0);
+
+    if (aRxOnWhenIdle)
+    {
+        flags |= SPINEL_THREAD_MODE_RX_ON_WHEN_IDLE;
+    }
+
+    if (aSecureDataRequests)
+    {
+        flags |= SPINEL_THREAD_MODE_SECURE_DATA_REQUEST;
+    }
+
+    if (aDeviceType)
+    {
+        flags |= SPINEL_THREAD_MODE_FULL_FUNCTION_DEV;
+    }
+
+    if (aNetworkData)
+    {
+        flags |= SPINEL_THREAD_MODE_FULL_NETWORK_DATA;
+    }
 
     return flags;
 }
@@ -1173,10 +1192,10 @@ void NcpBase::HandleNetifStateChanged(uint32_t aFlags, void *aContext)
     obj->mUpdateChangedPropsTask.Post();
 }
 
-void NcpBase::UpdateChangedProps(void *aContext)
+void NcpBase::UpdateChangedProps(Tasklet &aTasklet)
 {
-    NcpBase *obj = static_cast<NcpBase *>(aContext);
-    obj->UpdateChangedProps();
+    OT_UNUSED_VARIABLE(aTasklet);
+    GetNcpInstance()->UpdateChangedProps();
 }
 
 void NcpBase::UpdateChangedProps(void)
@@ -1448,7 +1467,7 @@ void NcpBase::HandleReceive(const uint8_t *aBuf, uint16_t aBufLength)
 void NcpBase::HandleFrameRemovedFromNcpBuffer(void *aContext, NcpFrameBuffer::FrameTag aFrameTag,
                                               NcpFrameBuffer *aNcpBuffer)
 {
-    (void)aNcpBuffer;
+    OT_UNUSED_VARIABLE(aNcpBuffer);
     static_cast<NcpBase *>(aContext)->HandleFrameRemovedFromNcpBuffer(aFrameTag);
 }
 
@@ -1814,9 +1833,9 @@ otError NcpBase::OutboundFrameFeedPacked(const char *aPackFormat, ...)
 
 otError NcpBase::CommandHandler_NOOP(uint8_t aHeader, unsigned int aCommand, const uint8_t *aArgPtr, uint16_t aArgLen)
 {
-    (void)aCommand;
-    (void)aArgPtr;
-    (void)aArgLen;
+    OT_UNUSED_VARIABLE(aCommand);
+    OT_UNUSED_VARIABLE(aArgPtr);
+    OT_UNUSED_VARIABLE(aArgLen);
 
     return SendLastStatus(aHeader, SPINEL_STATUS_OK);
 }
@@ -1827,10 +1846,10 @@ otError NcpBase::CommandHandler_RESET(uint8_t aHeader, unsigned int aCommand, co
     otError error = OT_ERROR_NONE;
 
     // We aren't using any of the arguments to this function.
-    (void)aHeader;
-    (void)aCommand;
-    (void)aArgPtr;
-    (void)aArgLen;
+    OT_UNUSED_VARIABLE(aHeader);
+    OT_UNUSED_VARIABLE(aCommand);
+    OT_UNUSED_VARIABLE(aArgPtr);
+    OT_UNUSED_VARIABLE(aArgLen);
 
     // Signal a platform reset. If implemented, this function
     // shouldn't return.
@@ -1872,7 +1891,7 @@ otError NcpBase::CommandHandler_PROP_VALUE_GET(uint8_t aHeader, unsigned int aCo
         error = SendLastStatus(aHeader, SPINEL_STATUS_PARSE_ERROR);
     }
 
-    (void)aCommand;
+    OT_UNUSED_VARIABLE(aCommand);
 
     return error;
 }
@@ -1909,7 +1928,7 @@ otError NcpBase::CommandHandler_PROP_VALUE_SET(uint8_t aHeader, unsigned int aCo
         error = SendLastStatus(aHeader, SPINEL_STATUS_PARSE_ERROR);
     }
 
-    (void)aCommand;
+    OT_UNUSED_VARIABLE(aCommand);
 
     return error;
 }
@@ -1946,7 +1965,7 @@ otError NcpBase::CommandHandler_PROP_VALUE_INSERT(uint8_t aHeader, unsigned int 
         error = SendLastStatus(aHeader, SPINEL_STATUS_PARSE_ERROR);
     }
 
-    (void)aCommand;
+    OT_UNUSED_VARIABLE(aCommand);
 
     return error;
 }
@@ -1983,7 +2002,7 @@ otError NcpBase::CommandHandler_PROP_VALUE_REMOVE(uint8_t aHeader, unsigned int 
         error = SendLastStatus(aHeader, SPINEL_STATUS_PARSE_ERROR);
     }
 
-    (void)aCommand;
+    OT_UNUSED_VARIABLE(aCommand);
 
     return error;
 }
@@ -1991,9 +2010,9 @@ otError NcpBase::CommandHandler_PROP_VALUE_REMOVE(uint8_t aHeader, unsigned int 
 otError NcpBase::CommandHandler_NET_SAVE(uint8_t aHeader, unsigned int aCommand, const uint8_t *aArgPtr,
                                          uint16_t aArgLen)
 {
-    (void)aCommand;
-    (void)aArgPtr;
-    (void)aArgLen;
+    OT_UNUSED_VARIABLE(aCommand);
+    OT_UNUSED_VARIABLE(aArgPtr);
+    OT_UNUSED_VARIABLE(aArgLen);
 
     return SendLastStatus(aHeader, SPINEL_STATUS_UNIMPLEMENTED);
 }
@@ -2001,9 +2020,9 @@ otError NcpBase::CommandHandler_NET_SAVE(uint8_t aHeader, unsigned int aCommand,
 otError NcpBase::CommandHandler_NET_CLEAR(uint8_t aHeader, unsigned int aCommand, const uint8_t *aArgPtr,
                                           uint16_t aArgLen)
 {
-    (void)aCommand;
-    (void)aArgPtr;
-    (void)aArgLen;
+    OT_UNUSED_VARIABLE(aCommand);
+    OT_UNUSED_VARIABLE(aArgPtr);
+    OT_UNUSED_VARIABLE(aArgLen);
 
     return SendLastStatus(aHeader, ThreadErrorToSpinelStatus(otInstanceErasePersistentInfo(mInstance)));
 }
@@ -2011,9 +2030,9 @@ otError NcpBase::CommandHandler_NET_CLEAR(uint8_t aHeader, unsigned int aCommand
 otError NcpBase::CommandHandler_NET_RECALL(uint8_t aHeader, unsigned int aCommand, const uint8_t *aArgPtr,
                                            uint16_t aArgLen)
 {
-    (void)aCommand;
-    (void)aArgPtr;
-    (void)aArgLen;
+    OT_UNUSED_VARIABLE(aCommand);
+    OT_UNUSED_VARIABLE(aArgPtr);
+    OT_UNUSED_VARIABLE(aArgLen);
 
     return SendLastStatus(aHeader, SPINEL_STATUS_UNIMPLEMENTED);
 }
@@ -2070,7 +2089,7 @@ exit:
         error = SendLastStatus(aHeader, spinelError);
     }
 
-    (void)aCommand;
+    OT_UNUSED_VARIABLE(aCommand);
 
     return error;
 }
@@ -2114,7 +2133,7 @@ otError NcpBase::CommandHandler_POKE(uint8_t aHeader, unsigned int aCommand, con
 exit:
     error = SendLastStatus(aHeader, spinelError);
 
-    (void)aCommand;
+    OT_UNUSED_VARIABLE(aCommand);
 
     return error;
 }
@@ -2280,7 +2299,7 @@ otError NcpBase::GetPropertyHandler_HWADDR(uint8_t aHeader, spinel_prop_key_t aK
 otError NcpBase::GetPropertyHandler_LOCK(uint8_t aHeader, spinel_prop_key_t aKey)
 {
     // TODO: Implement property lock (Needs API!)
-    (void)aKey;
+    OT_UNUSED_VARIABLE(aKey);
 
     return SendLastStatus(aHeader, SPINEL_STATUS_UNIMPLEMENTED);
 }
@@ -2955,27 +2974,10 @@ otError NcpBase::GetPropertyHandler_THREAD_CHILD_TABLE(uint8_t aHeader, spinel_p
             continue;
         }
 
-        modeFlags = 0;
-
-        if (childInfo.mRxOnWhenIdle)
-        {
-            modeFlags |= kThreadMode_RxOnWhenIdle;
-        }
-
-        if (childInfo.mSecureDataRequest)
-        {
-            modeFlags |= kThreadMode_SecureDataRequest;
-        }
-
-        if (childInfo.mFullFunction)
-        {
-            modeFlags |= kThreadMode_FullFunctionDevice;
-        }
-
-        if (childInfo.mFullNetworkData)
-        {
-            modeFlags |= kThreadMode_FullNetworkData;
-        }
+        modeFlags = LinkFlagsToFlagByte(childInfo.mRxOnWhenIdle,
+                                        childInfo.mSecureDataRequest,
+                                        childInfo.mFullFunction,
+                                        childInfo.mFullNetworkData);
 
         SuccessOrExit(
             error = OutboundFrameFeedPacked(
@@ -3025,27 +3027,10 @@ otError NcpBase::GetPropertyHandler_THREAD_NEIGHBOR_TABLE(uint8_t aHeader, spine
 
     while (otThreadGetNextNeighborInfo(mInstance, &iter, &neighInfo) == OT_ERROR_NONE)
     {
-        modeFlags = 0;
-
-        if (neighInfo.mRxOnWhenIdle)
-        {
-            modeFlags |= kThreadMode_RxOnWhenIdle;
-        }
-
-        if (neighInfo.mSecureDataRequest)
-        {
-            modeFlags |= kThreadMode_SecureDataRequest;
-        }
-
-        if (neighInfo.mFullFunction)
-        {
-            modeFlags |= kThreadMode_FullFunctionDevice;
-        }
-
-        if (neighInfo.mFullNetworkData)
-        {
-            modeFlags |= kThreadMode_FullNetworkData;
-        }
+        modeFlags = LinkFlagsToFlagByte(neighInfo.mRxOnWhenIdle,
+                                        neighInfo.mSecureDataRequest,
+                                        neighInfo.mFullFunction,
+                                        neighInfo.mFullNetworkData);
 
         SuccessOrExit(
             error = OutboundFrameFeedPacked(
@@ -3379,7 +3364,7 @@ exit:
 otError NcpBase::GetPropertyHandler_IPV6_ROUTE_TABLE(uint8_t aHeader, spinel_prop_key_t aKey)
 {
     // TODO: Implement get route table
-    (void)aKey;
+    OT_UNUSED_VARIABLE(aKey);
 
     return SendLastStatus(aHeader, SPINEL_STATUS_UNIMPLEMENTED);
 }
@@ -3478,7 +3463,7 @@ exit:
 otError NcpBase::GetPropertyHandler_STREAM_NET(uint8_t aHeader, spinel_prop_key_t aKey)
 {
     // TODO: Implement explicit data poll.
-    (void)aKey;
+    OT_UNUSED_VARIABLE(aKey);
 
     return SendLastStatus(aHeader, SPINEL_STATUS_UNIMPLEMENTED);
 }
@@ -4086,28 +4071,13 @@ otError NcpBase::GetPropertyHandler_NET_PSKC(uint8_t aHeader, spinel_prop_key_t 
 
 otError NcpBase::GetPropertyHandler_THREAD_MODE(uint8_t aHeader, spinel_prop_key_t aKey)
 {
-    uint8_t numericMode = 0;
+    uint8_t numericMode;
     otLinkModeConfig modeConfig = otThreadGetLinkMode(mInstance);
 
-    if (modeConfig.mRxOnWhenIdle)
-    {
-        numericMode |= kThreadMode_RxOnWhenIdle;
-    }
-
-    if (modeConfig.mSecureDataRequests)
-    {
-        numericMode |= kThreadMode_SecureDataRequest;
-    }
-
-    if (modeConfig.mDeviceType)
-    {
-        numericMode |= kThreadMode_FullFunctionDevice;
-    }
-
-    if (modeConfig.mNetworkData)
-    {
-        numericMode |= kThreadMode_FullNetworkData;
-    }
+    numericMode = LinkFlagsToFlagByte(modeConfig.mRxOnWhenIdle,
+                                      modeConfig.mSecureDataRequests,
+                                      modeConfig.mDeviceType,
+                                      modeConfig.mNetworkData);
 
     return SendPropertyUpdate(
                aHeader,
@@ -4277,9 +4247,9 @@ otError NcpBase::SetPropertyHandler_POWER_STATE(uint8_t aHeader, spinel_prop_key
                                                 uint16_t aValueLen)
 {
     // TODO: Implement POWER_STATE
-    (void)aKey;
-    (void)aValuePtr;
-    (void)aValueLen;
+    OT_UNUSED_VARIABLE(aKey);
+    OT_UNUSED_VARIABLE(aValuePtr);
+    OT_UNUSED_VARIABLE(aValueLen);
 
     return SendLastStatus(aHeader, SPINEL_STATUS_UNIMPLEMENTED);
 }
@@ -4852,7 +4822,7 @@ exit:
         error = SendLastStatus(aHeader, ThreadErrorToSpinelStatus(error));
     }
 
-    (void)aKey;
+    OT_UNUSED_VARIABLE(aKey);
 
     return error;
 }
@@ -5182,7 +5152,7 @@ exit:
         error = SendLastStatus(aHeader, ThreadErrorToSpinelStatus(error));
     }
 
-    (void)aKey;
+    OT_UNUSED_VARIABLE(aKey);
 
     return error;
 }
@@ -5249,7 +5219,7 @@ exit:
         error = SendLastStatus(aHeader, ThreadErrorToSpinelStatus(error));
     }
 
-    (void)aKey;
+    OT_UNUSED_VARIABLE(aKey);
 
     return error;
 }
@@ -5631,7 +5601,7 @@ otError NcpBase::SetPropertyHandler_CNTR_RESET(uint8_t aHeader, spinel_prop_key_
     error = OT_ERROR_NOT_IMPLEMENTED;
 
 exit:
-    (void)aKey;
+    OT_UNUSED_VARIABLE(aKey);
 
     // There is currently no getter for PROP_CNTR_RESET, so we just
     // return SPINEL_STATUS_OK for success when the counters are reset.
@@ -5668,7 +5638,7 @@ otError NcpBase::SetPropertyHandler_THREAD_COMMISSIONER_ENABLED(uint8_t aHeader,
     }
 
 exit:
-    (void)aKey;
+    OT_UNUSED_VARIABLE(aKey);
 
     return SendLastStatus(aHeader, ThreadErrorToSpinelStatus(error));
 }
@@ -6023,11 +5993,11 @@ otError NcpBase::SetPropertyHandler_THREAD_MODE(uint8_t aHeader, spinel_prop_key
 
     VerifyOrExit(parsedLength > 0, error = OT_ERROR_PARSE);
 
-    modeConfig.mRxOnWhenIdle = ((numericMode & kThreadMode_RxOnWhenIdle) == kThreadMode_RxOnWhenIdle);
+    modeConfig.mRxOnWhenIdle = ((numericMode & SPINEL_THREAD_MODE_RX_ON_WHEN_IDLE) == SPINEL_THREAD_MODE_RX_ON_WHEN_IDLE);
     modeConfig.mSecureDataRequests =
-        ((numericMode & kThreadMode_SecureDataRequest) == kThreadMode_SecureDataRequest);
-    modeConfig.mDeviceType = ((numericMode & kThreadMode_FullFunctionDevice) == kThreadMode_FullFunctionDevice);
-    modeConfig.mNetworkData = ((numericMode & kThreadMode_FullNetworkData) == kThreadMode_FullNetworkData);
+        ((numericMode & SPINEL_THREAD_MODE_SECURE_DATA_REQUEST) == SPINEL_THREAD_MODE_SECURE_DATA_REQUEST);
+    modeConfig.mDeviceType = ((numericMode & SPINEL_THREAD_MODE_FULL_FUNCTION_DEV) == SPINEL_THREAD_MODE_FULL_FUNCTION_DEV);
+    modeConfig.mNetworkData = ((numericMode & SPINEL_THREAD_MODE_FULL_NETWORK_DATA) == SPINEL_THREAD_MODE_FULL_NETWORK_DATA);
 
     error = otThreadSetLinkMode(mInstance, modeConfig);
 
@@ -7520,8 +7490,8 @@ otError otNcpRegisterPeekPokeDelagates(otNcpDelegateAllowPeekPoke aAllowPeekDele
         ncp->RegisterPeekPokeDelagates(aAllowPeekDelegate, aAllowPokeDelegate);
     }
 #else
-    (void)aAllowPeekDelegate;
-    (void)aAllowPokeDelegate;
+    OT_UNUSED_VARIABLE(aAllowPeekDelegate);
+    OT_UNUSED_VARIABLE(aAllowPokeDelegate);
 
     error = OT_ERROR_DISABLED_FEATURE;
 
@@ -7545,7 +7515,7 @@ void otNcpRegisterLegacyHandlers(const otNcpLegacyHandlers *aHandlers)
     }
 
 #else
-    (void)aHandlers;
+    OT_UNUSED_VARIABLE(aHandlers);
 #endif
 }
 
@@ -7560,7 +7530,7 @@ void otNcpHandleDidReceiveNewLegacyUlaPrefix(const uint8_t *aUlaPrefix)
     }
 
 #else
-    (void)aUlaPrefix;
+    OT_UNUSED_VARIABLE(aUlaPrefix);
 #endif
 }
 
@@ -7575,6 +7545,6 @@ void otNcpHandleLegacyNodeDidJoin(const otExtAddress *aExtAddr)
     }
 
 #else
-    (void)aExtAddr;
+    OT_UNUSED_VARIABLE(aExtAddr);
 #endif
 }
