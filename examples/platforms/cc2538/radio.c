@@ -322,7 +322,6 @@ otError otPlatRadioReceive(otInstance *aInstance, uint8_t aChannel)
     if (sState != OT_RADIO_STATE_DISABLED)
     {
         otLogDebgPlat(sInstance, "State=OT_RADIO_STATE_RECEIVE", NULL);
-        MEASUREMENT_RECEIVING_ON;
 
         error = OT_ERROR_NONE;
         sState = OT_RADIO_STATE_RECEIVE;
@@ -331,8 +330,6 @@ otError otPlatRadioReceive(otInstance *aInstance, uint8_t aChannel)
         enableReceiver();
     }
 
-    // Measure receiving function
-    MEASUREMENT_RECEIVING_OFF;
     return error;
 }
 
