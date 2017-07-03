@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
     otLinkSetPanId(sInstance, 0x1234);
     otIp6SetEnabled(sInstance, true);
     otThreadSetEnabled(sInstance, true);
-    otLinkSetPollPeriod(sInstance, 300);
+    otLinkSetPollPeriod(sInstance, 250);
 
 	// Add specific IP address for testing
 	otNetifAddress aAddress;
