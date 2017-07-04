@@ -20,16 +20,15 @@
 #if WITH_CLIENT
 #include "dtls-client.h"
 #endif
-
-// Define default Port of local UDP server
-#ifndef OPENTHREAD_UDP_PORT_LOCAL
-#define OPENTHREAD_UDP_PORT_LOCAL 6666
 #endif
 
-// Define default Port of remote UDP server
-#ifndef OPENTHREAD_UDP_PORT_REMOTE
-#define OPENTHREAD_UDP_PORT_REMOTE 7777
-#endif
+// Define default port and ip address of local UDP server
+#define UDP_LOCAL_PORT 		6666
+#define UDP_LOCAL_ADDRESS 	"fdde:ad00:beef:0:5d12:76b8:948e:5b42"
+
+// Define port and ip address of remote UDP server
+#define UDP_REMOTE_PORT 	7777
+#define UDP_REMOTE_ADDRESS 	"fdde:ad00:beef:0:ce4f:671d:86cb:6f4d"
 
 // DTLS client defines
 #define DTLS_CLIENT_MESSAGE_CYCLE_TIME 1000

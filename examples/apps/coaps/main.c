@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 
 	// Add specific IP address for testing
 	otNetifAddress aAddress;
-	otIp6AddressFromString("fdde:ad00:beef:0:5d12:76b8:948e:5b42", &aAddress.mAddress);
+	otIp6AddressFromString(UDP_LOCAL_ADDRESS, &aAddress.mAddress);
 	aAddress.mPrefixLength = 64;
 	aAddress.mPreferred = true;
 	aAddress.mValid = true;
@@ -126,13 +126,14 @@ int main(int argc, char *argv[])
 	memset(&mSocket, 0, sizeof(mSocket));
 	memset(&sockaddr, 0, sizeof(otSockAddr));
 	mInstance = sInstance;
-	sockaddr.mPort = OPENTHREAD_UDP_PORT_LOCAL;
+	sockaddr.mPort = UDP_LOCAL_PORT;
 
 	// Bind Port
 	otUdpOpen(sInstance, &mSocket, (otUdpReceive) &read_packet, &mSocket);
 	otUdpBind(&mSocket, &sockaddr);
 #if DEBUG
-	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Socket open...");
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Local ip address: %s", UDP_LOCAL_ADDRESS);
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Local socket port: %d", UDP_LOCAL_PORT);
 #endif
 #endif
 
@@ -169,12 +170,12 @@ int main(int argc, char *argv[])
 
 	// define source and destination
 	otMessageInfo dest_messageInfo;
-	otIp6AddressFromString("fdde:ad00:beef:0:713b:7f3b:cffc:83c8", &session.addr);
+	otIp6AddressFromString(UDP_REMOTE_ADDRESS, &session.addr);
 	dest_messageInfo.mHopLimit = 8;
 	dest_messageInfo.mInterfaceId = OT_NETIF_INTERFACE_ID_THREAD;
 	dest_messageInfo.mSockPort = mSocket.mSockName.mPort;
 	dest_messageInfo.mSockAddr = mSocket.mSockName.mAddress;
-	dest_messageInfo.mPeerPort = OPENTHREAD_UDP_PORT_REMOTE;
+	dest_messageInfo.mPeerPort = UDP_REMOTE_PORT;
 	dest_messageInfo.mPeerAddr = session.addr;
 	session.messageInfo = dest_messageInfo;
 
@@ -189,6 +190,7 @@ int main(int argc, char *argv[])
 	static coap_resource_t request = {COAP_RDY, COAP_METHOD_PUT, COAP_TYPE_CON, NULL, &resourcePath, COAP_SET_CONTENTTYPE(COAP_CONTENTTYPE_TXT_PLAIN)};
 	coap_make_request(messageId, NULL, &request, &messageId, sizeof(messageId), &requestPacket);
 #if DEBUG
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Remote connection to %s:%d", UDP_REMOTE_ADDRESS, UDP_REMOTE_PORT);
 	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Client mode = PUT");
 #endif
 #else
