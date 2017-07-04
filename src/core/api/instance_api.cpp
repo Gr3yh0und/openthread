@@ -81,6 +81,12 @@ ot::Ip6::Ip6 &otGetIp6(void)
 }
 #endif // #if !OPENTHREAD_ENABLE_MULTIPLE_INSTANCES
 
+void otInstance::HandleInstanceTimer(ot::Timer &aTimer)
+{
+    sInstance->mHandleTimerCallback(sInstance);
+    (void) aTimer;
+}
+
 otInstance::otInstance(void) :
     mReceiveIp6DatagramCallback(NULL),
     mReceiveIp6DatagramCallbackContext(NULL),
@@ -99,7 +105,7 @@ otInstance::otInstance(void) :
 #if OPENTHREAD_CONFIG_ENABLE_DYNAMIC_LOG_LEVEL
     , mLogLevel(static_cast<otLogLevel>(OPENTHREAD_CONFIG_LOG_LEVEL))
 #endif // OPENTHREAD_CONFIG_ENABLE_DYNAMIC_LOG_LEVEL
-	, mTimer(mIp6.mTimerScheduler, &otInstance::HandleInstanceTimer, this)
+	, mTimer(sInstance->mIp6.mTimerScheduler, &otInstance::HandleInstanceTimer, this)
 {
 }
 
@@ -311,9 +317,4 @@ void otTimerStop(otInstance *aInstance)
 uint32_t otTimerGetNow(otInstance *aInstance)
 {
     return aInstance->mTimer.GetNow();
-}
-
-void otInstance::HandleInstanceTimer(void *aContext)
-{
-    static_cast<otInstance *>(aContext)->mHandleTimerCallback(aContext);
 }

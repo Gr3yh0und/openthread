@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 	// Create OpenThread instance
     otInstance *sInstance;
     PlatformInit(argc, argv);
-    sInstance = otInstanceInit();
+    sInstance = otInstanceInitSingle();
     assert(sInstance);
 
     // Check if command line interface should be enabled

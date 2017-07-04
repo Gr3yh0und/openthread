@@ -75,7 +75,7 @@ typedef struct otInstance
     void *mEnergyScanCallbackContext;
 
     otTimerCallback mHandleTimerCallback;
-    static void HandleInstanceTimer(void *aContext);
+    static void HandleInstanceTimer(ot::Timer &aTimer);
 
     //
     // State
