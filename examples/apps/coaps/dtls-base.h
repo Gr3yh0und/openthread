@@ -8,11 +8,17 @@
 #ifndef EXAMPLES_APPS_COAPS_DTLS_BASE_H_
 #define EXAMPLES_APPS_COAPS_DTLS_BASE_H_
 
+#include <stdio.h>
+#include "openthread/udp.h"
+#include <openthread/openthread.h>
+#include "openthread/platform/alarm.h"
+
 #include "../third_party/yacoap/coap.h"
 #include "../third_party/tinydtls/dtls.h"
 #include "../third_party/tinydtls/dtls_debug.h"
 #include "measurement.h"
 
+#ifdef WITH_TINYDTLS
 #if WITH_SERVER
 #include "dtls-server.h"
 #endif
@@ -35,14 +41,16 @@
 #define DTLS_CLIENT_BUFFER_SIZE        32
 #define DTLS_LOG_LEVEL                 DTLS_LOG_WARN
 
-extern dtls_context_t *the_context;
-dtls_handler_t dtls_callback;
-
 void read_packet(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo);
 void send_packet(session_t *session, uint8 *data, size_t len);
+
+#ifdef WITH_TINYDTLS
+extern dtls_context_t *the_context;
+dtls_handler_t dtls_callback;
 void handle_message(session_t *session, uint8 *message, int messageLength);
 int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len);
 int handle_event(struct dtls_context_t *ctx, session_t *session, dtls_alert_level_t level, unsigned short code);
 int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data, size_t length);
+#endif
 
 #endif /* EXAMPLES_APPS_COAPS_DTLS_BASE_H_ */

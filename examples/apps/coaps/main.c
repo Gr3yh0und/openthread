@@ -60,18 +60,17 @@ extern coap_resource_t resources[];
 
 /* UDP client thread */
 #if WITH_CLIENT
-	static session_t session;
-	static uint8 buffer[DTLS_CLIENT_BUFFER_SIZE];
-	static size_t bufferLength = sizeof(buffer);
+static session_t session;
+static uint8 buffer[DTLS_CLIENT_BUFFER_SIZE];
+static size_t bufferLength = sizeof(buffer);
 
-	// Callback gets executed by timer
-	void sendClientMessage(){
-		otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, ".");
-		MEASUREMENT_DTLS_TOTAL_ON;
-		MEASUREMENT_DTLS_WRITE_ON;
-		dtls_write(the_context, &session, buffer, bufferLength);
-		MEASUREMENT_DTLS_WRITE_OFF;
-	}
+// Callback gets executed by timer
+void sendClientMessage(){
+	MEASUREMENT_DTLS_TOTAL_ON;
+	MEASUREMENT_DTLS_WRITE_ON;
+	dtls_write(the_context, &session, buffer, bufferLength);
+	MEASUREMENT_DTLS_WRITE_OFF;
+}
 #endif
 
 void otTaskletsSignalPending(otInstance *aInstance)
@@ -90,6 +89,9 @@ int main(int argc, char *argv[])
     // Check if command line interface should be enabled
 #if OPENTHREAD_ENABLE_COAPS_CLI
     otCliUartInit(sInstance);
+#if DEBUG
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "OpenThread version: %s", VERSION);
+#endif
 #endif
 
     // Enable basic hard coded Thread configuration
@@ -181,7 +183,7 @@ int main(int argc, char *argv[])
 
 #ifdef WITH_YACOAP
 	static coap_packet_t requestPacket;
-	static uint8 messageId = 42;
+	static uint8 messageId = 0;
 
 	// Check which function the CoAP client should have
 #ifdef WITH_CLIENT_PUT

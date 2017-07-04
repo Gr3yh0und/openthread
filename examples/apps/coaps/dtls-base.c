@@ -5,26 +5,19 @@
  *      Author: Michael Morscher, morscher@hm.edu
  */
 
-#include <stdio.h>
-#include "openthread/udp.h"
-#include <openthread/openthread.h>
-#include "openthread/platform/alarm.h"
-
 #include "dtls-base.h"
 
 extern otInstance *mInstance;
 extern otSockAddr sockaddr;
 extern otUdpSocket mSocket;
 
-#if WITH_TINYDTLS
-extern dtls_context_t *the_context;
-#endif
-
 #if WITH_YACOAP || WITH_SERVER
 extern coap_resource_t resources[];
 #endif
 
 #if WITH_TINYDTLS
+extern dtls_context_t *the_context;
+
 /* Definition of executed handlers */
 dtls_handler_t dtls_callback = {
   .write = handle_write,
@@ -41,7 +34,7 @@ int handle_write(struct dtls_context_t *ctx, session_t *session, uint8 *data, si
 #if DEBUG
 	char buffer[len];
 	snprintf(buffer, sizeof buffer, "%s", data);
-	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(WRITE): Sending data (%d Byte)", otPlatAlarmGetNow(), len, buffer);
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(handle_write): Sending secure data with %d Bytes (raw)", otPlatAlarmGetNow(), len, buffer);
 #endif
 
 	// Sending DTLS encrypted application data over UDP
@@ -56,11 +49,11 @@ int handle_event(struct dtls_context_t *ctx, session_t *session, dtls_alert_leve
 
 #if DEBUG
   if (code == DTLS_EVENT_CONNECTED) {
-    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(EVENT): Connected!", otPlatAlarmGetNow());
+    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(handle_event): Connected!", otPlatAlarmGetNow());
   }else if (code == DTLS_EVENT_CONNECT){
-    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(EVENT): Connecting...", otPlatAlarmGetNow());
+    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(handle_event): Connecting...", otPlatAlarmGetNow());
   }else{
-    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(EVENT): Event occurred! (level %d, code %d )", otPlatAlarmGetNow(), level, code);
+    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(handle_event): Event occurred! (level %d, code %d )", otPlatAlarmGetNow(), level, code);
   }
 #endif
 
@@ -77,7 +70,7 @@ int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data,
 #if DEBUG
 	char loggingBuffer[length];
 	snprintf(loggingBuffer, sizeof loggingBuffer, "%s", data);
-	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(READ): Received data (%d Byte)", otPlatAlarmGetNow(), length, loggingBuffer);
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(handle_read): Received secure data with %d Bytes", otPlatAlarmGetNow(), length, loggingBuffer);
 #endif
 
 #if WITH_YACOAP
@@ -106,7 +99,7 @@ int handle_read(struct dtls_context_t *context, session_t *session, uint8 *data,
 	coap_packet_t packet;
 	coap_parse(data, length, &packet);
 #if DEBUG
-	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(COAP): Answer was: %.*s", otPlatAlarmGetNow(), packet.payload.len, (char *)packet.payload.p);
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(handle_read): Answer was: %.*s", otPlatAlarmGetNow(), packet.payload.len, (char *)packet.payload.p);
 #endif
 	(void) context;
 	(void) session;
@@ -138,7 +131,7 @@ void read_packet(void *aContext, otMessage *aMessage, const otMessageInfo *aMess
     session.messageInfo = *aMessageInfo;
 
 #if DEBUG
-    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(onUDP): Receiving data", otPlatAlarmGetNow());
+    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(read_packet): Received data with %d Bytes (raw) and %d Bytes (payload)", otPlatAlarmGetNow(), otMessageGetLength(aMessage), payloadLength);
 #endif
 
     MEASUREMENT_DTLS_READ_OFF;
@@ -172,6 +165,9 @@ void send_packet(session_t *session, uint8 *data, size_t len)
 	otMessageWrite(message, 0, data, len);
 
 	// Send packet to peer
+#if DEBUG
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(send_packet): Sending message with %d Bytes (raw)", otPlatAlarmGetNow(), len);
+#endif
 	otUdpSend(&mSocket, message, &session->messageInfo);
 #ifdef WITH_SERVER
 	MEASUREMENT_DTLS_WRITE_OFF;
@@ -180,7 +176,7 @@ void send_packet(session_t *session, uint8 *data, size_t len)
 
 void handle_message(session_t *session, uint8 *message, int messageLength){
 #if DEBUG
-    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(handle_message): Received request...", otPlatAlarmGetNow());
+    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "%d(handle_message): Received message with %d Bytes (CoAP)", otPlatAlarmGetNow(), messageLength);
 #endif
 #ifdef WITH_YACOAP
 	coap_packet_t requestPacket, responsePacket;
