@@ -97,7 +97,21 @@ int main(int argc, char *argv[])
     otLinkSetPanId(sInstance, 0x1234);
     otIp6SetEnabled(sInstance, true);
     otThreadSetEnabled(sInstance, true);
-    otLinkSetPollPeriod(sInstance, 250);
+
+    // Sleep mode configuration (mode: s with 250ms sleep periods)
+#if SLEEP_MODE_ENABLE
+    int sleepPeriod = 250;
+    otLinkModeConfig linkMode;
+    linkMode.mRxOnWhenIdle = 0;
+    linkMode.mSecureDataRequests = 1;
+    linkMode.mDeviceType = 0;
+    linkMode.mNetworkData = 0;
+    otThreadSetLinkMode(sInstance, linkMode);
+    otLinkSetPollPeriod(sInstance, sleepPeriod);
+#if DEBUG
+	otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "Sleep mode enabled with %dms sleep periods", sleepPeriod);
+#endif
+#endif
 
 	// Add specific IP address for testing
 	otNetifAddress aAddress;

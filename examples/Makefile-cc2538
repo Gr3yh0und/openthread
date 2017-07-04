@@ -60,7 +60,7 @@ ADDON_FLAGS                       := \
     -DWITH_CLIENT_PUT=1              \
     -DGPIO_OUTPUT_ENABLE=1           \
     -DGPIO_OUTPUT_ENABLE_LEDS=1      \
-    -DYACOAP_LEDS_ENABLED=0          \
+    -DSLEEP_MODE_ENABLE=1            \
     -DDEBUG=1                        \
     $(NULL)
 
